@@ -2,7 +2,7 @@ from aiogram.utils import executor
 from create import dp
 from aiogram import types
 #from db.models.user import Base, engine
-#from commands import
+from commands import get_tasks
 from keyboards import menu
 
 commands = [
@@ -23,13 +23,16 @@ DESCRIPTION = ""
 async def start_command(message: types.Message):
     await message.answer("Добро пожаловать!\n\n" + DESCRIPTION)
 
+
 @dp.message_handler(commands=['menu'])
 async def menu_command(message: types.Message):
     await message.answer("Выберите команду\n\n", reply_markup=menu)
 
-@dp.callback_handler(text='tasks')
-async def tasks_command(message: types.Message):
-    await message.answer("Выберите команду\n\n", reply_markup=menu)
+
+@dp.callback_query_handler(text=['menu'])
+async def menu_command(callback: types.CallbackQuery):
+    await callback.message.edit_text("Выберите команду\n\n", reply_markup=menu)
+
 
 #Base.metadata.create_all(bind=engine)
 

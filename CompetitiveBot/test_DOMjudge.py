@@ -17,6 +17,7 @@ except ModuleNotFoundError:
     # Ignore, magic is optional
     magic = None
 
+
 # Получения списка задач
 """url = 'http://localhost:12345/api/v4/contests/1/problems'
 
