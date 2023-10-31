@@ -2,7 +2,7 @@ from aiogram.utils import executor
 from create import dp
 from aiogram import types
 #from db.models.user import Base, engine
-from commands import get_tasks
+from commands import get_tasks, get_languages
 from keyboards import menu
 
 commands = [

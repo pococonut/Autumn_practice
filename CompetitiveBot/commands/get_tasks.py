@@ -72,7 +72,7 @@ async def show_tasks(callback: types.CallbackQuery):
     if usr_id not in globalDict:
         globalDict[usr_id] = 0
 
-    contests_id = 1
+    contests_id = 2
     url_problems = f'http://localhost:12345/api/v4/contests/{contests_id}/problems'
     response = requests.get(url_problems)
     tasks = response.json()
