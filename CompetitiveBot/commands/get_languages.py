@@ -1,7 +1,7 @@
 import requests
 from create import dp
 from aiogram import types
-from keyboards import menu
+from keyboards import menu_keyboard
 
 
 @dp.callback_query_handler(text='lang')
@@ -15,6 +15,6 @@ async def languages(callback: types.CallbackQuery):
 
     if response.status_code == 200:
         available_lang = "\n▫️ ".join([i['name'] for i in result])
-        await callback.message.edit_text(f'Решения принимаются на языках:\n▫️ {available_lang}', reply_markup=menu,)
+        await callback.message.edit_text(f'Решения принимаются на языках:\n▫️ {available_lang}', reply_markup=menu_keyboard,)
     else:
-        await callback.message.edit_text('Ошибка при отправке запроса', reply_markup=menu)
+        await callback.message.edit_text('Ошибка при отправке запроса', reply_markup=menu_keyboard)

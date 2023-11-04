@@ -1,9 +1,9 @@
 from aiogram.utils import executor
 from create import dp
 from aiogram import types
-#from db.models.user import Base, engine
-from commands import get_tasks, get_languages
-from keyboards import menu
+# from db.models.user import Base, engine
+from commands import get_tasks, get_languages, submit_solution
+from keyboards import menu_keyboard
 
 commands = [
     types.BotCommand(command='/menu', description='Меню'),
@@ -24,14 +24,14 @@ async def start_command(message: types.Message):
     await message.answer("Добро пожаловать!\n\n" + DESCRIPTION)
 
 
-@dp.message_handler(commands=['menu'])
+@dp.message_handler(commands='menu')
 async def menu_command(message: types.Message):
-    await message.answer("Выберите команду\n\n", reply_markup=menu)
+    await message.answer("Выберите команду\n\n", reply_markup=menu_keyboard)
 
 
-@dp.callback_query_handler(text=['menu'])
-async def menu_command(callback: types.CallbackQuery):
-    await callback.message.edit_text("Выберите команду\n\n", reply_markup=menu)
+@dp.callback_query_handler(text=['menu_inline'])
+async def menu_command_inline(callback: types.CallbackQuery):
+    await callback.message.edit_text("Выберите команду\n\n", reply_markup=menu_keyboard)
 
 
 #Base.metadata.create_all(bind=engine)

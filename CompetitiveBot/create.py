@@ -5,4 +5,5 @@ from config import settings
 
 
 bot = Bot(settings.api)
+print(bot)
 dp = Dispatcher(bot, storage=MemoryStorage())

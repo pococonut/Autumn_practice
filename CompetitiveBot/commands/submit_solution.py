@@ -1,5 +1,4 @@
 import requests
-import json
 import argparse
 import datetime
 import json
@@ -9,7 +8,13 @@ import requests.utils
 import stat
 import sys
 import time
-
+import base64
+from create import dp, bot
+from aiogram import types
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import StatesGroup, State
+from config import settings
+from keyboards import languages_ikb
 
 try:
     import magic
@@ -17,112 +22,20 @@ except ModuleNotFoundError:
     # Ignore, magic is optional
     magic = None
 
+contest_id = '2'
+problem_id = '1'
+lang_id = 'python3'
 
-# Получения списка задач
-"""url = 'http://localhost:12345/api/v4/contests/1/problems'
-
-
-url3 = 'http://localhost:12345/api/v4/contests/1/problems/1/statement?strict=false'
-
-response = requests.get(url)
-result = response.json()
-
-if response.status_code == 200:
-    for p in result:
-        print('PROBLEM #', p.get('ordinal'))
-        print()
-        for k, v in p.items():
-            print(k, ':', v)
-
-        print()
-        print()
-
-else:
-       print('Ошибка при отправке запроса:', result)
-
-print()
-print("----------------------------------")
-print()
-
-
-# Получение добавленных задач
-url2 = 'http://localhost:12345/api/v4/contests/2/problems'
-
-response = requests.get(url2)
-result = response.json()
-
-if response.status_code == 200:
-    for p in result:
-        print('PROBLEM #', p.get('ordinal'))
-        print()
-        for k, v in p.items():
-            print(k, ':', v)
-        print()
-        print()
-
-else:
-       print('Ошибка при отправке запроса:', result)
-
-print()
-print("----------------------------------")
-print()
-
-
-import textract
-import codecs
-
-response = requests.get(url3)
-
-# Получение описания задачи в виде pdf файла
-url3 = 'http://localhost:12345/api/v4/contests/1/problems/1/statement?strict=false'
-
-if response.status_code == 200:
-    with open(f"test1.pdf", "wb") as file:
-        file.write(response.content)
-        # преобразование файла в текст
-        text = codecs.decode(textract.process("test1.pdf"), "UTF-8")
-        print(text)
-else:
-       print('Ошибка при отправке запроса:', result)
-
-
-print()
-print("----------------------------------")
-print()
-
-
-url4 = 'http://localhost:12345/api/v4/languages?strict=false'
-
-response = requests.get(url4)
-result = response.json()
-
-if response.status_code == 200:
-    print(result)
-
-else:
-       print('Ошибка при отправке запроса:', result)
-
-print()
-print("----------------------------------")
-print()"""
-
-
-api_url = 'http://localhost:12345/api/v4/contests/1/submissions'
 username = 'demo'
 password = '1234567890'
-
-# Set the default base URL to submit to (optional). It can be overridden
-# by the SUBMITBASEURL environment variable or the -u/--url argument.
 baseurl = 'http://localhost:12345/'
-
-# Use a specific API version, set to empty string for default
-# or set to the version followed by a slash to use that version
 api_version = 'v4'
 
 headers = {'user-agent': f'domjudge-submit-client ({requests.utils.default_user_agent()})'}
+credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
+headers['Authorization'] = f'Basic {credentials}'
 
 warn_mtime_minutes = 5
-
 num_warnings = 0
 
 
@@ -154,11 +67,11 @@ def warn_user(msg: str):
 
 
 def read_contests() -> list:
-    '''Read all contests from the API.
+    """Read all contests from the API.
 
     Returns:
         The contests or None if an error occurred.
-    '''
+    """
 
     try:
         data = do_api_request('contests')
@@ -185,14 +98,14 @@ def read_contests() -> list:
 
 
 def read_languages() -> list:
-    '''Read all languages for the current contest from the API.
+    """Read all languages for the current contest from the API.
 
     Returns:
         The languages or None if an error occurred.
-    '''
+    """
 
     try:
-        endpoint = 'contests/' + '2' + '/languages'
+        endpoint = 'contests/' + contest_id + '/languages'
         data = do_api_request(endpoint)
     except RuntimeError as e:
         logging.warning(e)
@@ -234,7 +147,7 @@ def read_problems() -> list:
     '''
 
     try:
-        endpoint = 'contests/' + '2' + '/problems'
+        endpoint = 'contests/' + contest_id + '/problems'
         data = do_api_request(endpoint)
     except RuntimeError as e:
         logging.warning(e)
@@ -261,7 +174,7 @@ def read_problems() -> list:
 
 
 def do_api_request(name: str):
-    '''Perform an API call to the given endpoint and return its data.
+    """Perform an API call to the given endpoint and return its data.
 
     Parameters:
         name (str): the endpoint to call
@@ -271,7 +184,7 @@ def do_api_request(name: str):
 
     Raises:
         RuntimeError when the response is not JSON or the HTTP status code is non 2xx.
-    '''
+    """
 
     if not baseurl:
         raise RuntimeError('No baseurl set')
@@ -298,18 +211,18 @@ def do_api_request(name: str):
 
 
 def do_api_submit():
-    '''Submit to the API with the given data.'''
+    """Submit to the API with the given data."""
 
     data = {
-        'problem': '4',
-        'language': 'python3',
+        'problem': f'{problem_id}',
+        'language': f'{lang_id}',
     }
     #if entry_point:
     #    data['entry_point'] = entry_point
 
     files = [('code[]', open(filename, 'rb')) for filename in filenames]
 
-    url = f"{baseurl}api/{api_version}/contests/2/submissions"
+    url = f"{baseurl}api/{api_version}/contests/{contest_id}/submissions"
     logging.info(f'connecting to {url}')
 
     response = requests.post(url, data=data, files=files, headers=headers)
@@ -368,7 +281,7 @@ def get_epilog():
 
     if not contests or len(contests) <= 1:
         contests_part_one = '''For CONTEST use the ID or short name as shown in the top-right contest
-drop-down box in the web interface.'''
+         drop-down box in the web interface.'''
         if contests and len(contests) == 1:
             contests_part_two = f"Currently this defaults to the only active contest '{contests[0]['shortname']}'"
     else:
@@ -490,12 +403,6 @@ elif 'SUBMITBASEURL' in os.environ:
 if baseurl and baseurl[-1:] != '/':
     baseurl += '/'
 
-if args.contest:
-    contest_id = args.contest
-elif 'SUBMITCONTEST' in os.environ:
-    contest_id = os.environ['SUBMITCONTEST']
-else:
-    contest_id = ''
 
 contests = read_contests() if baseurl else None
 if not contests and not args.help:
@@ -504,6 +411,11 @@ if not contests and not args.help:
 my_contest = None
 my_language = None
 my_problem = None
+
+for c in contests:
+    if contest_id == c.get('id'):
+        my_contest = c
+        break
 
 if not contest_id:
     if not contests:
@@ -514,6 +426,8 @@ if not contest_id:
     else:
         shortnames = ', '.join([c['shortname'] for c in contests])
         warn_user(f"Multiple active contests found, please specify one of {shortnames}")
+        print(contests)
+
 elif contests:
     contest_id = contest_id.lower()
     for contest in contests:
@@ -552,11 +466,9 @@ if not languages:
 if not problems:
     logging.warning('Could not obtain problem data.')
 
-"""if len(args.filename) == 0:
-    usage('No file(s) specified.')"""
 
 # Process all source files
-filenames = ['main.py']
+filenames = ['test.py']
 for index, filename in enumerate(args.filename, 1):
     # Ignore doubly specified files
     if filename in filenames:
@@ -618,8 +530,9 @@ if not my_language:
     usage('No known language specified or detected.')
 
 # Check for problem matching ID or label.
-problem_id = problem_id.lower()
+problem_id = '4'
 for problem in problems:
+    print(problem['id'].lower(), problem_id)
     if problem['id'].lower() == problem_id or problem['label'].lower() == problem_id:
         my_problem = problem
         break
@@ -645,8 +558,9 @@ logging.debug(f"language is `{my_language['name']}'")
 logging.debug(f"entry_point is `{entry_point or '<None>'}'")
 logging.debug(f"url is `{baseurl}'")
 
-if not args.assume_yes:
+"""if not args.assume_yes:
     print('Submission information:')
+    print(filenames)
     if len(filenames) == 1:
         print(f'  filename:    {filenames[0]}')
     else:
@@ -662,6 +576,47 @@ if not args.assume_yes:
         print('There are warnings for this submission!\a')
 
     if not confirm('Do you want to continue?'):
-        error('submission aborted by user')
+        error('submission aborted by user')"""
 
-do_api_submit()
+# do_api_submit()
+
+
+class File(StatesGroup):
+    lang = State()
+    file = State()
+
+
+@dp.callback_query_handler(text=['solution'])
+async def wait_file(callback: types.CallbackQuery):
+    await callback.message.edit_text("Выберите язык.", reply_markup=languages_ikb)
+    await File.lang.set()
+
+
+@dp.callback_query_handler(state=File.lang)
+async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
+    await state.update_data(lang=callback.data)
+    await callback.message.edit_text("Отправьте файл с решением.")
+    await File.next()
+
+
+async def download_file(file_id):
+    file_info = await bot.get_file(file_id)
+    file_path = file_info.file_path
+    file_url = f"https://api.telegram.org/file/bot{settings.api}/{file_path}"
+
+    # Скачиваем файл
+    response = requests.get(file_url)
+
+    # Сохраняем файл на локальном компьютере
+    with open('files/solutions/test.py', 'wb') as f:
+        f.write(response.content)
+
+
+@dp.message_handler(content_types=types.ContentTypes.DOCUMENT, state=File.file)
+async def handle_document(message: types.Message, state: FSMContext):
+    # Получаем информацию о файле
+    file_id = message.document.file_id
+    # Скачиваем и сохраняем файл
+    await download_file(file_id)
+    await message.answer('Файл успешно скачан')
+    await state.finish()

@@ -3,7 +3,7 @@ import requests
 import textract
 from create import dp
 from aiogram import types
-from keyboards import tasks_navigation, menu
+from keyboards import tasks_navigation, menu_keyboard
 
 globalDict = dict()
 
@@ -47,9 +47,9 @@ def print_task(problem, c_id):
 
     Returns: Строка с информацией о задаче
     """
-    s = (f"Название: {problem.get('name')}\n"
-         f"Уровень: {problem.get('label')}\n"
-         f"Ограничение по времени: {problem.get('time_limit')} сек.\n")
+    s = (f"<em>Название:</em> {problem.get('name')}\n"
+         f"<em>Уровень:</em> {problem.get('label')}\n"
+         f"<em>Ограничение по времени:</em> {problem.get('time_limit')} сек.\n")
 
     url_problem_text = f'http://localhost:12345/api/v4/contests/{c_id}/problems/{problem.get("id")}/statement?strict=false'
     response = requests.get(url_problem_text)
@@ -59,7 +59,7 @@ def print_task(problem, c_id):
             file.write(response.content)
             # преобразование файла в текст
             text = codecs.decode(textract.process(f"files/test{problem.get('id')}.pdf"), "UTF-8")
-            s += f"Описание:\n\n{text}"
+            s += f"<em>Описание:</em>\n\n{text}"
     return s
 
 
@@ -84,7 +84,7 @@ async def show_tasks(callback: types.CallbackQuery):
                                          disable_web_page_preview=True)
     else:
         if not tasks:
-            await callback.message.edit_text('В данный момент задач нет.\nЗагляните позже.', reply_markup=menu)
+            await callback.message.edit_text('В данный момент задач нет.\nЗагляните позже.', reply_markup=menu_keyboard)
             await callback.answer()
         else:
             count_tasks = len(tasks)
