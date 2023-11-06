@@ -9,14 +9,13 @@ import stat
 import sys
 import time
 import base64
-
 from commands.get_tasks import problemIdDict
 from create import dp, bot
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from config import settings
-from keyboards import languages_ikb, back_ikb
+from keyboards import languages_ikb, back_ikb, check_result_ikb
 
 try:
     import magic
@@ -24,21 +23,7 @@ except ModuleNotFoundError:
     # Ignore, magic is optional
     magic = None
 
-"""contest_id = '2'
-problem_id = '1'
-lang_id = 'python3'
-
-username = 'demo'
-password = '1234567890'
-baseurl = 'http://localhost:12345/'
-api_version = 'v4'
-
-headers = {'user-agent': f'domjudge-submit-client ({requests.utils.default_user_agent()})'}
-credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
-headers['Authorization'] = f'Basic {credentials}'
-
-warn_mtime_minutes = 5
-num_warnings = 0"""
+solutionsID = {}
 
 
 def confirm(message: str) -> bool:
@@ -247,21 +232,22 @@ def do_api_submit(problem_id, lang_id, contest_id, api_version, baseurl, headers
     except json.decoder.JSONDecodeError as e:
         error(f'Parsing DOMjudge\'s API output failed: {e}')
         err = "Ошибка: Parsing DOMjudge\'s API output failed: {e}"
-        return False
+        return False, err
 
     if (not isinstance(submission, dict)
         or not 'id' in submission
         or not isinstance(submission['id'], str)):
         error('DOMjudge\'s API returned unexpected JSON data.')
         err = "Ошибка: DOMjudge\'s API returned unexpected JSON data."
-        return False
+        return False, err
 
     time = datetime.datetime.fromisoformat(submission['time']).strftime('%H:%M:%S')
     sid = submission['id']
-    return True
+    print(f"Submission received: id = s{sid}, time = {time}")
+    print(f"Check {baseurl}team/submission/{sid} for the result.")
 
-    # print(f"Submission received: id = s{sid}, time = {time}")
-    # print(f"Check {baseurl}team/submission/{sid} for the result.")
+    return True, sid
+
 
 
 def kotlin_base_entry_point(filebase: str) -> str:
@@ -373,16 +359,18 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
     await File.next()
 
 
-async def download_file(file_id):
+async def download_file(filename, file_id):
     file_info = await bot.get_file(file_id)
     file_path = file_info.file_path
     file_url = f"https://api.telegram.org/file/bot{settings.api}/{file_path}"
-
     # Скачиваем файл
     response = requests.get(file_url)
-
     # Сохраняем файл на локальном компьютере
-    with open('files/solutions/test.py', 'wb') as f:
+
+    """if os.path.exists(filename):
+        os.rename(f'{filename}', f'{old_filename}.txt')"""
+
+    with open(filename, 'wb') as f:
         f.write(response.content)
 
 
@@ -391,17 +379,22 @@ async def handle_document(message: types.Message, state: FSMContext):
     # Получаем информацию о файле
     file_id = message.document.file_id
     # Скачиваем и сохраняем файл
-    await download_file(file_id)
+    contest_id = '2'
+    problem_id = problemIdDict[f'{message.from_user.id}']
+    username = 'demo'
+    filename = f'files/solutions/solution_{contest_id}_{problem_id}_{username}.py'
+
+    await download_file(filename, file_id)
     data = await state.get_data()
     await state.finish()
 
-    contest_id = '2'
-    problem_id = problemIdDict[f'{message.from_user.id}']
     language_id = data["lang"]
-    username = 'demo'
     password = '1234567890'
     baseurl = 'http://localhost:12345/'
     api_version = 'v4'
+    filenames = [f'{filename}']
+
+    # await download_file(f"solution_{contest_id}_{problem_id}_{username}")
 
     headers = {'user-agent': f'domjudge-submit-client ({requests.utils.default_user_agent()})'}
     credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
@@ -534,7 +527,6 @@ async def handle_document(message: types.Message, state: FSMContext):
         logging.warning('Could not obtain problem data.')
 
     # Process all source files
-    filenames = ['files/solutions/test.py']
     for index, filename in enumerate(args.filename, 1):
         # Ignore doubly specified files
         if filename in filenames:
@@ -644,11 +636,13 @@ async def handle_document(message: types.Message, state: FSMContext):
         """if not confirm('Do you want to continue?'):
             error('submission aborted by user')"""
 
-    submit_connection = do_api_submit(problem_id, language_id, contest_id, api_version, baseurl, headers, filenames)
+    submit_connection, data = do_api_submit(problem_id, language_id, contest_id, api_version, baseurl, headers, filenames)
 
     if submit_connection:
-        await message.answer('Решение было получено.')
+        await message.answer('Решение было получено.', reply_markup=check_result_ikb)
+        solutionsID[message.from_user.id] = data
+        print(solutionsID)
     else:
-        await message.answer('Ошибка при отправке решения.')
+        await message.answer(f'Ошибка при отправке решения: {data}.')
 
 
