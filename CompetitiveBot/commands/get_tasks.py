@@ -6,6 +6,7 @@ from aiogram import types
 from keyboards import tasks_navigation, menu_keyboard
 
 globalDict = dict()
+problemIdDict = dict()
 
 
 def navigation(direction, page, count):
@@ -72,7 +73,8 @@ async def show_tasks(callback: types.CallbackQuery):
     if usr_id not in globalDict:
         globalDict[usr_id] = 0
 
-    contests_id = 2
+
+    contests_id = '2'
     url_problems = f'http://localhost:12345/api/v4/contests/{contests_id}/problems'
     response = requests.get(url_problems)
     tasks = response.json()
@@ -87,6 +89,10 @@ async def show_tasks(callback: types.CallbackQuery):
             await callback.message.edit_text('В данный момент задач нет.\nЗагляните позже.', reply_markup=menu_keyboard)
             await callback.answer()
         else:
+            if usr_id not in problemIdDict:
+                problemIdDict[usr_id] = tasks[0].get('id')
+                print('problemIdDict', problemIdDict[usr_id])
+
             count_tasks = len(tasks)
             if callback.data == 'tasks':
                 p = globalDict[usr_id]
@@ -100,7 +106,10 @@ async def show_tasks(callback: types.CallbackQuery):
                     disable_web_page_preview=True)
             else:
                 s, globalDict[usr_id] = navigation(callback.data, globalDict[usr_id], count_tasks)
-                print(s, globalDict[usr_id])
+                problemIdDict[usr_id] = tasks[globalDict[usr_id]].get('id')
+
+                print('problemIdDict', problemIdDict[usr_id])
+
                 await callback.message.edit_text(s + print_task(tasks[globalDict[usr_id]], contests_id),
                                                  parse_mode='HTML',
                                                  reply_markup=tasks_navigation,
