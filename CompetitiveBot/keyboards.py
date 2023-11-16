@@ -44,3 +44,13 @@ languages_ikb.add(l_b1, l_b2, l_b3, l_b4)
 check_result_ikb = InlineKeyboardMarkup()
 check_result_b1 = InlineKeyboardButton(text="Получить результат", callback_data="check_result")
 check_result_ikb.add(check_result_b1)
+
+# Клавиатура после получения результата тестирования задачи
+after_result_ikb = InlineKeyboardMarkup()
+ar_b1 = InlineKeyboardButton(text="Исходный код", callback_data="code_source")
+after_result_ikb.add(ar_b1).add(menu_inline_b)
+
+# Клавиатура для возврата к просмотру результата решения
+return_result_ikb = InlineKeyboardMarkup()
+rr_b1 = InlineKeyboardButton(text="Назад", callback_data="check_result")
+return_result_ikb.add(rr_b1).add(menu_inline_b)

@@ -5,7 +5,7 @@ from create import dp
 from aiogram import types
 from config import settings
 from commands.submit_solution import solutionsID
-from keyboards import menu_keyboard
+from keyboards import menu_keyboard, after_result_ikb, return_result_ikb
 
 judgement_types = {
     "AC": {"Name": "Accepted", "Description": "Solves the problem", "Description_rus": "🟩 Решение правильное!"},
@@ -76,6 +76,8 @@ EXTENSIONS = {
     "java": "java",
     "python3": "py"
 }
+
+CONTEST_ID = 2
 
 
 def decode(base64_string):
@@ -188,17 +190,12 @@ def get_submission_verdict(submission_id):
 async def show_tasks(callback: types.CallbackQuery):
     await callback.message.edit_text("Получаю данные...")
     time.sleep(5)
-    contest_id = 2
-    submission = [s for s in get_contest_submissions(contest_id) if s["id"] == solutionsID[callback.from_user.id]][0]
-
+    submission = [s for s in get_contest_submissions(CONTEST_ID) if s["id"] == solutionsID[callback.from_user.id]][0]
     #team_id = submission.get("team_id")
-
     problem_id = submission.get("problem_id")
     problem_name = "".join([p.get("name") for p in get_contest_problems('2') if p.get("id") == problem_id])
     s_id = submission.get("id")
     language = submission.get("language_id")
-    code_source = get_submission_source_code(contest_id, s_id)
-
     submission_verdict = get_submission_verdict(s_id)
     verdict_description = judgement_types.get(submission_verdict)
 
@@ -214,7 +211,14 @@ async def show_tasks(callback: types.CallbackQuery):
 
     text += "<b><em>Результат:</em></b>\n\n" + verdict_text
 
-    # f"{[judgement_types[submission_verdict].values()]}\n"
+    await callback.message.edit_text(text, reply_markup=after_result_ikb, parse_mode='HTML')
 
-    await callback.message.edit_text(text, reply_markup=menu_keyboard, parse_mode='HTML')
 
+@dp.callback_query_handler(text="code_source")
+async def show_task_code(callback: types.CallbackQuery):
+    submission = [s for s in get_contest_submissions(CONTEST_ID) if s["id"] == solutionsID[callback.from_user.id]][0]
+    s_id = submission.get("id")
+
+    if callback.data == "code_source":
+        code_source = f"<code>{get_submission_source_code(CONTEST_ID, s_id)}</code>"
+        await callback.message.edit_text(code_source, reply_markup=return_result_ikb, parse_mode='HTML')
