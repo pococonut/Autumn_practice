@@ -119,66 +119,36 @@ def get_submission_verdict(submission_id):
     Get the verdict for a submission.
     """
     for judgement in get_submission_judgement(submission_id):
+        print(judgement)
         if judgement["valid"] is True:
             return judgement["judgement_type_id"]
 
     return None
 
 
-def save_submission_source_code(save_folder, verdict, language, source_code):
-    """
-    Save the source code for a submission.
-    """
-    if source_code is None:
-        return
-    file_name = f"{verdict}.{EXTENSIONS[language]}"
-    file_path = os.path.join(save_folder, file_name)
-    with open(file_path, "w") as f:
-        f.write(source_code)
+contest_id = 2
+
+# Process each submission and store the relevant information
+for submission in get_contest_submissions(contest_id):
+    if submission["id"] == "40":
+        team_id = submission["team_id"]
+        problem_id = submission["problem_id"]
+        submission_id = submission["id"]
+
+        submission_verdict = get_submission_verdict(submission_id)
+
+        language = submission["language_id"]
+        code_source = get_submission_source_code(contest_id, submission_id)
 
 
-def main():
-    save_folder = r"C:\Users\user\Desktop\submissions"
-    contest_id = 2
-
-    # Get contest problems and store them in a dictionary for easy access
-    contest_problems = {problem["id"]: problem for problem in get_contest_problems(contest_id)}
-
-    # Get contest teams and store them in a dictionary for easy access
-    contest_teams = {team["id"]: team for team in get_contest_teams(contest_id)}
-
-    # Create a dictionary to store submissions for each team and problem
-    teams_submissions = {team_id:
-                             {problem_id: {"AC": ["cpp", None],
-                                           "TLE": ["cpp", None],
-                                           "WA": ["cpp", None],
-                                           "RTE": ["cpp", None]} for problem_id in contest_problems}
-                         for team_id in contest_teams}
-
-    # Process each submission and store the relevant information
-    for submission in get_contest_submissions(contest_id):
-        if submission["id"] == "12":
-            team_id = submission["team_id"]
-            problem_id = submission["problem_id"]
-            submission_id = submission["id"]
-
-            submission_verdict = get_submission_verdict(submission_id)
-
-            language = submission["language_id"]
-            code_source = get_submission_source_code(contest_id, submission_id)
-
-            teams_submissions[team_id][problem_id][submission_verdict] = [language, code_source]
-
-    print(team_id)
-    print(problem_id)
-    print(submission_id)
-    print(submission_verdict)
-    print(language)
-    print(code_source)
-    print()
+        print(team_id)
+        print(problem_id)
+        print(submission_id)
+        print(submission_verdict)
+        print(language)
+        print(code_source)
+        print()
 
 
 
-
-if __name__ == "__main__":
-    main()
+    

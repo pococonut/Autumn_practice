@@ -1,3 +1,4 @@
+import time
 import requests
 import base64
 from create import dp
@@ -7,14 +8,15 @@ from commands.submit_solution import solutionsID
 from keyboards import menu_keyboard
 
 judgement_types = {
-    "AC": {"Name": "Name", "Description": "Solves the problem"},
-    "RE": {"Name": "Rejected", "Description": "Does not solve the problem"},
-    "WA": {"Name": "Wrong Answer", "Description": "Output is not correct"},
-    "TLE": {"Name": "Time Limit Exceeded", "Description": "Too slow"},
-    "RTE": {"Name": "Run-Time Error", "Description": "Crashes"},
-    "CE": {"Name": "Compile Error", "Description": "Does not compile"},
+    "AC": {"Name": "Accepted", "Description": "Solves the problem", "Description_rus": "🟩 Решение правильное!"},
+    "RE": {"Name": "Rejected", "Description": "Does not solve the problem", "Description_rus": "🟥 Решение не верно"},
+    "WA": {"Name": "Wrong Answer", "Description": "Output is not correct", "Description_rus": "🟥 Вывод неверен"},
+    "TLE": {"Name": "Time Limit Exceeded", "Description": "🟨 Медленное выполнение программы"},
+    "RTE": {"Name": "Run-Time Error", "Description": "🟥 Произошёл сбой"},
+    "CE": {"Name": "Compile Error", "Description": "🟥 Решение не компилируется"},
     "APE": {"Name": "Accepted - Presentation Error",
-            "Description": "Solves the problem, although formatting is wrong"},
+            "Description": "Solves the problem, although formatting is wrong",
+            "Description_rus": "Решает проблему, но форматирование неправильное"},
     "OLE": {"Name": "Output Limit Exceeded", "Description": "Output is larger than allowed"},
     "PE": {"Name": "Presentation Error", "Description": "Data in output is correct, but formatting is wrong"},
     "EO": {"Name": "Excessive Output", "Description": "A correct output is produced, but also additional output"},
@@ -49,6 +51,15 @@ judgement_types = {
     "CS": {"Name": "Contact Staff	", "Description": "Something went wrong"}
 }
 
+# Аутентификация
+USERNAME = settings.admin_username
+PASSWORD = settings.admin_password
+
+# Создаем объект сеанса
+session = requests.Session()
+# Выполняем проверку подлинности
+session.auth = (USERNAME, PASSWORD)
+
 PLATFORM_URL = "http://localhost:12345"
 
 # Шаблоны URL-адресов API
@@ -65,15 +76,6 @@ EXTENSIONS = {
     "java": "java",
     "python3": "py"
 }
-
-# Аутентификация
-USERNAME = settings.admin_username
-PASSWORD = settings.admin_password
-
-# Создаем объект сеанса
-session = requests.Session()
-# Выполняем проверку подлинности
-session.auth = (USERNAME, PASSWORD)
 
 
 def decode(base64_string):
@@ -98,6 +100,7 @@ def get_json_response(request_url):
         request_url: url адрес
     Returns: Данные ответа в формате JSON
     """
+
     response = session.get(request_url)
 
     data = None
@@ -111,6 +114,15 @@ def get_json_response(request_url):
         print("Request failed with status code:", response.status_code)
 
     return data
+
+
+def get_contest_problems(contest_id):
+    """
+    Get the problems for a contest.
+    """
+    url = CONTEST_PROBLEMS_URL_TEMPLATE.replace("CONTEST_ID", str(contest_id))
+
+    return get_json_response(url)
 
 
 def get_contest_submissions(contest_id):
@@ -165,6 +177,7 @@ def get_submission_verdict(submission_id):
     Returns:
     """
     for judgement in get_submission_judgement(submission_id):
+        print(judgement)
         if judgement["valid"] is True:
             return judgement["judgement_type_id"]
 
@@ -173,20 +186,35 @@ def get_submission_verdict(submission_id):
 
 @dp.callback_query_handler(text='check_result')
 async def show_tasks(callback: types.CallbackQuery):
+    await callback.message.edit_text("Получаю данные...")
+    time.sleep(5)
     contest_id = 2
     submission = [s for s in get_contest_submissions(contest_id) if s["id"] == solutionsID[callback.from_user.id]][0]
-    team_id = submission["team_id"]
-    problem_id = submission["problem_id"]
-    submission_id = submission["id"]
-    submission_verdict = get_submission_verdict(submission_id)
-    language = submission["language_id"]
-    code_source = get_submission_source_code(contest_id, submission_id)
 
-    text = (f"problem_id: {problem_id}\n"
-            f"submission_verdict: {submission_verdict}\n"
-            f"{[judgement_types[submission_verdict].values()]}\n"
-            f"language: {language}\n"
-            f"code_source: {code_source}")
+    #team_id = submission.get("team_id")
 
-    await callback.message.edit_text(text, reply_markup=menu_keyboard)
+    problem_id = submission.get("problem_id")
+    problem_name = "".join([p.get("name") for p in get_contest_problems('2') if p.get("id") == problem_id])
+    s_id = submission.get("id")
+    language = submission.get("language_id")
+    code_source = get_submission_source_code(contest_id, s_id)
+
+    submission_verdict = get_submission_verdict(s_id)
+    verdict_description = judgement_types.get(submission_verdict)
+
+    text = (f"<b><em>Задача:</em></b> {problem_name}\n"
+            f"<b><em>Язык программирования:</em></b> {language}\n")
+
+    verdict_text = submission_verdict
+    if verdict_description:
+        verdict_values = list(verdict_description.values())
+        verdict_text = f"{submission_verdict} - {verdict_values[0]}\n<em>{verdict_values[1]}</em>"
+        if len(verdict_values) == 3:
+            verdict_text += f"\n\n{verdict_values[2]}"
+
+    text += "<b><em>Результат:</em></b>\n\n" + verdict_text
+
+    # f"{[judgement_types[submission_verdict].values()]}\n"
+
+    await callback.message.edit_text(text, reply_markup=menu_keyboard, parse_mode='HTML')
 

@@ -24,7 +24,13 @@ tasks_navigation = InlineKeyboardMarkup()
 tn_b1 = InlineKeyboardButton(text="Отправить решение", callback_data="solution")
 tn_b2 = InlineKeyboardButton(text="Назад", callback_data="left_task")
 tn_b3 = InlineKeyboardButton(text="Вперед", callback_data="right_task")
-tasks_navigation.add(menu_inline_b).add(tn_b1).add(tn_b2, tn_b3)
+tn_b4 = InlineKeyboardButton(text="Подробнее", callback_data="more_task")
+tasks_navigation.add(tn_b4).add(tn_b1).add(tn_b2, tn_b3).add(menu_inline_b)
+
+# Клавиатура при подробном просмотре задачи
+tasks_more_navigation = InlineKeyboardMarkup()
+tmn_b1 = InlineKeyboardButton(text="Вернуться к просмотру", callback_data="tasks")
+tasks_more_navigation.add(tmn_b1).add(tn_b1).add(menu_inline_b)
 
 # Клавиатура для выбора языка
 languages_ikb = InlineKeyboardMarkup()

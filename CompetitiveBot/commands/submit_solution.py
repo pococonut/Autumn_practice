@@ -347,15 +347,18 @@ async def wait_file(callback: types.CallbackQuery):
 
     await File.lang.set()
 
+previous_messages = {}
+
 
 @dp.callback_query_handler(state=File.lang)
 async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
-    languages_id = {"lang_C": "c",
-                    "lang_C++": "cpp",
-                    "lang_Java": "java",
-                    "lang_Python": "python3"}
+    languages_id = {"lang_C": ["c", "c"],
+                    "lang_C++": ["cpp", "cpp"],
+                    "lang_Java": ["java", "java"],
+                    "lang_Python": ["python3", "py"]}
     await state.update_data(lang=languages_id[callback.data])
     await callback.message.edit_text("Отправьте файл с решением.", reply_markup=back_ikb)
+    previous_messages[str(callback.from_user.id)] = callback.message.message_id
     await File.next()
 
 
@@ -381,14 +384,17 @@ async def handle_document(message: types.Message, state: FSMContext):
     # Скачиваем и сохраняем файл
     contest_id = '2'
     problem_id = problemIdDict[f'{message.from_user.id}']
+    print('!!!!!!!!', problem_id)
     username = 'demo'
-    filename = f'files/solutions/solution_{contest_id}_{problem_id}_{username}.py'
-
-    await download_file(filename, file_id)
     data = await state.get_data()
     await state.finish()
+    filename = f'files/solutions/solution_{contest_id}_{problem_id}_{username}.{data["lang"][1]}'
 
-    language_id = data["lang"]
+    await download_file(filename, file_id)
+    await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=previous_messages[str(message.from_user.id)])
+    #await bot.delete_message(chat_id=message.chat.id, message_id=previous_messages[str(message.from_user.id)])
+
+    language_id = data["lang"][0]
     password = '1234567890'
     baseurl = 'http://localhost:12345/'
     api_version = 'v4'
@@ -588,7 +594,6 @@ async def handle_document(message: types.Message, state: FSMContext):
         usage('No known language specified or detected.')
 
     # Check for problem matching ID or label.
-    problem_id = '4'
     for problem in problems:
         print(problem['id'].lower(), problem_id)
         if problem['id'].lower() == problem_id or problem['label'].lower() == problem_id:
