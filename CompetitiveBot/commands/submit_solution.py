@@ -249,7 +249,6 @@ def do_api_submit(problem_id, lang_id, contest_id, api_version, baseurl, headers
     return True, sid
 
 
-
 def kotlin_base_entry_point(filebase: str) -> str:
     if filebase == "":
         return "_"
