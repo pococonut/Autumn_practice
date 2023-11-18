@@ -2,8 +2,8 @@ from aiogram.utils import executor
 from create import dp
 from aiogram import types
 # from db.models.user import Base, engine
-from commands import get_tasks, get_languages, submit_solution, get_result, get_scoreboard, back
-from keyboards import menu_keyboard
+from commands import get_tasks, get_languages, submit_solution, get_result, get_scoreboard, add_user, back
+from keyboards import menu_keyboard, registration_ikb
 
 commands = [
     types.BotCommand(command='/menu', description='Меню'),
@@ -21,7 +21,7 @@ DESCRIPTION = ""
 
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message):
-    await message.answer("Добро пожаловать!\n\n" + DESCRIPTION)
+    await message.answer("Добро пожаловать!\n\n" + DESCRIPTION, reply_markup=registration_ikb)
 
 
 @dp.message_handler(commands='menu')

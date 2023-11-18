@@ -9,6 +9,11 @@ back_ikb.add(back_b)
 menu_ikb = InlineKeyboardMarkup()
 menu_ikb.add(menu_inline_b)
 
+# Клавиатура для регистрации пользователя
+registration_ikb = InlineKeyboardMarkup()
+r_b1 = InlineKeyboardButton(text="Регистрация", callback_data="registration")
+registration_ikb.add(r_b1)
+
 # Кнопка с меню в зависимости от типа пользователя
 menu_keyboard = InlineKeyboardMarkup()
 m_b1 = InlineKeyboardButton(text="Просмотр задач", callback_data="tasks")
