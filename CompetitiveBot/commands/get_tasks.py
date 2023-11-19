@@ -90,8 +90,6 @@ def print_task(problem, c_id, more=0):
                     text = text.replace(k, v)
             text = text.replace(": ", ":\n")
 
-
-
             s += f"<b><em>Описание:</em></b>\n\n{text}"
     return s
 

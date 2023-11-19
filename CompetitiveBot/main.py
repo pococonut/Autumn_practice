@@ -1,15 +1,16 @@
+import logging
 from aiogram.utils import executor
+from commands.url_requests import read_teams
 from create import dp
 from aiogram import types
 # from db.models.user import Base, engine
 from commands import get_tasks, get_languages, submit_solution, get_result, get_scoreboard, add_user, back
 from keyboards import menu_keyboard, registration_ikb
 
-commands = [
-    types.BotCommand(command='/menu', description='Меню'),
-    types.BotCommand(command='/change', description='Изменение данных'),
-    types.BotCommand(command='/show', description='Просмотр данных'),
-]
+logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w",
+                    format="%(asctime)s %(levelname)s %(message)s")
+
+commands = [types.BotCommand(command='/menu', description='Меню')]
 
 
 async def set_commands(dp):
@@ -26,12 +27,20 @@ async def start_command(message: types.Message):
 
 @dp.message_handler(commands='menu')
 async def menu_command(message: types.Message):
-    await message.answer("Выберите команду.\n\n", reply_markup=menu_keyboard)
+    already_exist = [True for t in read_teams() if str(message.from_user.id) in t.get("name")]
+    if already_exist:
+        await message.answer("Выберите команду.\n\n", reply_markup=menu_keyboard)
+    else:
+        await message.answer("Пройдите этап регистрации.", reply_markup=registration_ikb)
 
 
 @dp.callback_query_handler(text=['menu_inline'])
 async def menu_command_inline(callback: types.CallbackQuery):
-    await callback.message.edit_text("Выберите команду.\n\n", reply_markup=menu_keyboard)
+    already_exist = [True for t in read_teams() if str(callback.from_user.id) in t.get("name")]
+    if already_exist:
+        await callback.message.edit_text("Выберите команду.\n\n", reply_markup=menu_keyboard)
+    else:
+        await callback.message.edit_text("Пройдите этап регистрации.", reply_markup=registration_ikb)
 
 # Base.metadata.create_all(bind=engine)
 
