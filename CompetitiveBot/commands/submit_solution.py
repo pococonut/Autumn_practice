@@ -279,7 +279,7 @@ async def handle_document(message: types.Message, state: FSMContext):
     response_get_users = session.get(url_get_users)
     for u in response_get_users.json():
         if str(message.from_user.id) == u.get("username").split("_")[-1]:
-            print(username)
+            print(u)
             username = u.get("username")
             break
 
@@ -291,7 +291,7 @@ async def handle_document(message: types.Message, state: FSMContext):
     await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=previous_messages[str(message.from_user.id)])
 
     language_id = data["lang"][0]
-    password = f"{str(message.from_user.id)}_{str(datetime.date.today()).replace('-', '_')}"
+    password = f"user_{str(message.from_user.id)}"
     # password = '1234567890'
     baseurl = 'http://localhost:12345/'
     api_version = 'v4'

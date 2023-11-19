@@ -10,13 +10,12 @@ async def scoreboard(callback: types.CallbackQuery):
     """
     Функция для получения рейтинговой таблицы
     """
-    url = "http://localhost:12345/api/v4/contests/2/scoreboard?strict=false"
+    url = "http://localhost:12345/api/v4/contests/2/scoreboard?public=true&strict=false"
     response = requests.get(url)
     result = response.json()
 
     if response.status_code == 200:
-        for r in result.get("rows"):
-            for k, v in r.items():
-                print(k, v)
+        for k, v in result.items():
+            print(k, v)
     else:
         await callback.message.edit_text('Ошибка при отправке запроса', reply_markup=menu_ikb)

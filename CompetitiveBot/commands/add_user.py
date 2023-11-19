@@ -50,7 +50,8 @@ async def get_user_name(message: types.Message, state: FSMContext):
     new_team_data = {
         "display_name": data["name"],
         "name": unic_name_team,
-        "id": str(int(response_get_teams.json()[-1].get("id")) + 1)
+        "id": str(int(response_get_teams.json()[-1].get("id")) + 1),
+        "group_ids": ["3"]
     }
 
     # Отправка POST-запроса для добавления новой команды
@@ -61,8 +62,8 @@ async def get_user_name(message: types.Message, state: FSMContext):
         print('Команда успешно успешно добавлена')
 
         # данные нового пользователя
-        password = f"{str(message.from_user.id)}_{str(date.today()).replace('-','_')}"
-
+        password = f"user_{str(message.from_user.id)}"
+        print(password)
         response_get_teams = session.get(url_get_teams)
         team_id = None
         for team in response_get_teams.json():
