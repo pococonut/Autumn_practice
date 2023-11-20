@@ -160,3 +160,5 @@ cython_debug/
 config.py
 .idea
 test.py
+test_DOMjudge.py
+test_GET_RESULT.py

@@ -70,13 +70,16 @@ async def show_tasks(callback: types.CallbackQuery):
     while time.time() - start_time < timeout_seconds:
         try:
             submission = [s for s in read_submissions() if s["id"] == solutionsID[callback.from_user.id]][0]
-            if submission:
+            submission_verdict = get_submission_verdict(submission.get("id"))
+
+            if submission_verdict:
                 break
         except Exception as e:
             print(f"Error making API request: {e}")
             logging.exception(e)
             break
         time.sleep(1)
+    print("submission", submission)
 
     if submission:
         # team_id = submission.get("team_id")
