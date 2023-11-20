@@ -1,3 +1,4 @@
+import logging
 import time
 from create import dp
 from aiogram import types
@@ -62,29 +63,43 @@ EXTENSIONS = {
 @dp.callback_query_handler(text='check_result')
 async def show_tasks(callback: types.CallbackQuery):
     await callback.message.edit_text("Получаю данные...")
-    time.sleep(5)
-    submission = [s for s in read_submissions() if s["id"] == solutionsID[callback.from_user.id]][0]
-    # team_id = submission.get("team_id")
-    problem_id = submission.get("problem_id")
-    problem_name = "".join([p.get("name") for p in read_problems() if p.get("id") == problem_id])
-    s_id = submission.get("id")
-    language = submission.get("language_id")
-    submission_verdict = get_submission_verdict(s_id)
-    verdict_description = judgement_types.get(submission_verdict)
+    timeout_seconds = 60
+    start_time = time.time()
+    submission = None
 
-    text = (f"<b><em>Задача:</em></b> {problem_name}\n"
-            f"<b><em>Язык программирования:</em></b> {language}\n")
+    while time.time() - start_time < timeout_seconds:
+        try:
+            submission = [s for s in read_submissions() if s["id"] == solutionsID[callback.from_user.id]][0]
+            if submission:
+                break
+        except Exception as e:
+            print(f"Error making API request: {e}")
+            logging.exception(e)
+            break
+        time.sleep(1)
 
-    verdict_text = submission_verdict
-    if verdict_description:
-        verdict_values = list(verdict_description.values())
-        verdict_text = f"{submission_verdict} - {verdict_values[0]}\n<em>{verdict_values[1]}</em>"
-        if len(verdict_values) == 3:
-            verdict_text += f"\n\n{verdict_values[2]}"
+    if submission:
+        # team_id = submission.get("team_id")
+        problem_id = submission.get("problem_id")
+        problem_name = "".join([p.get("name") for p in read_problems() if p.get("id") == problem_id])
+        s_id = submission.get("id")
+        language = submission.get("language_id")
+        submission_verdict = get_submission_verdict(s_id)
+        verdict_description = judgement_types.get(submission_verdict)
 
-    text += "<b><em>Результат:</em></b>\n\n" + verdict_text
+        text = (f"<b><em>Задача:</em></b> {problem_name}\n"
+                f"<b><em>Язык программирования:</em></b> {language}\n")
 
-    await callback.message.edit_text(text, reply_markup=after_result_ikb, parse_mode='HTML')
+        verdict_text = submission_verdict
+        if verdict_description:
+            verdict_values = list(verdict_description.values())
+            verdict_text = f"{submission_verdict} - {verdict_values[0]}\n<em>{verdict_values[1]}</em>"
+            if len(verdict_values) == 3:
+                verdict_text += f"\n\n{verdict_values[2]}"
+
+        text += "<b><em>Результат:</em></b>\n\n" + verdict_text
+
+        await callback.message.edit_text(text, reply_markup=after_result_ikb, parse_mode='HTML')
 
 
 @dp.callback_query_handler(text="code_source")
