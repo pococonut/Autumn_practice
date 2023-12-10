@@ -84,7 +84,19 @@ async def show_tasks(callback: types.CallbackQuery):
         problem_name = "".join([p.get("name") for p in read_problems() if p.get("id") == problem_id])
         s_id = submission.get("id")
         language = submission.get("language_id")
-        submission_verdict = get_submission_verdict(s_id)
+
+        start_time = time.time()
+        while time.time() - start_time < timeout_seconds:
+            try:
+                submission_verdict = get_submission_verdict(s_id)
+                if submission_verdict:
+                    break
+            except Exception as e:
+                print(f"Error making API request: {e}")
+                logging.exception(e)
+                break
+            time.sleep(1)
+
         verdict_description = judgement_types.get(submission_verdict)
 
         text = (f"<b><em>Задача:</em></b> {problem_name}\n"

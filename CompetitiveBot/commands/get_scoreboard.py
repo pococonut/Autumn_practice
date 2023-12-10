@@ -37,9 +37,9 @@ async def scoreboard(callback: types.CallbackQuery):
     Функция для получения и вывода рейтинговой таблицы
     """
     response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE)
-    result = response.json()
 
     if response.status_code == 200:
+        result = response.json()
         table_show = []
         table = result.get("rows")
 

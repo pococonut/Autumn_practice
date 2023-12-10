@@ -1,11 +1,11 @@
 import codecs
-import requests
 import textract
 
+from commands.general_func import get_lvl_task
 from commands.url_requests import read_problems, read_problem_text
 from create import dp
 from aiogram import types
-from keyboards import tasks_navigation, menu_keyboard, level_ikb, tn_b1, menu_inline_b, tn_b2
+from keyboards import tasks_navigation, menu_keyboard, level_ikb, menu_inline_b, tn_b2
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 globalDict_level = dict()
@@ -53,15 +53,7 @@ def print_task(problem, more=0):
     Returns: Строка с информацией о задаче
     """
 
-    levels = {"A": "Легкий",
-              "B": "Средний",
-              "C": "Сложный"}
-
-    level = problem.get('label')
-    for k, v in levels.items():
-        if k in problem.get('label'):
-            level = v
-            break
+    level = get_lvl_task(problem)
 
     s = (f"<b><em>Название:</em></b> {problem.get('name')}\n"
          f"<b><em>Уровень:</em></b> {level}\n"
@@ -128,9 +120,9 @@ async def show_tasks(callback: types.CallbackQuery):
             await callback.message.edit_text('В данный момент задач нет.\nЗагляните позже.', reply_markup=menu_keyboard)
             await callback.answer()
         else:
-            if usr_id not in problemIdDict:
+            if usr_id not in problemIdDict or callback.data in ('A', 'B', 'C'):
                 problemIdDict[usr_id] = tasks[0].get('id')
-                print('problemIdDict', problemIdDict[usr_id])
+            print('problemIdDict', problemIdDict[usr_id])
 
             count_tasks = len(tasks)
 

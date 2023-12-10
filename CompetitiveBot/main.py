@@ -3,8 +3,7 @@ from aiogram.utils import executor
 from commands.url_requests import read_teams
 from create import dp
 from aiogram import types
-# from db.models.user import Base, engine
-from commands import get_tasks, get_languages, submit_solution, get_result, get_scoreboard, add_user, back
+from commands import get_tasks, get_languages, submit_solution, get_result, get_scoreboard, add_user, get_user_info ,back
 from keyboards import menu_keyboard, registration_ikb
 
 logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w",
@@ -42,7 +41,6 @@ async def menu_command_inline(callback: types.CallbackQuery):
     else:
         await callback.message.edit_text("Пройдите этап регистрации.", reply_markup=registration_ikb)
 
-# Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
     executor.start_polling(dp, on_startup=set_commands, skip_updates=True)

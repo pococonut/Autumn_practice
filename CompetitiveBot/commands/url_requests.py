@@ -50,7 +50,6 @@ def read_problem_text(p_id):
     return requests.get(url)
 
 
-
 def read_teams():
     """
     Функция для получения всех команд
