@@ -28,7 +28,8 @@ async def get_user_name(message: types.Message, state: FSMContext):
         await message.answer("ФИО введено в некорректном формате, повторите ввод.")
         return
 
-    await state.update_data(name=message.text)
+    name = " ".join([w.capitalize() for w in message.text])
+    await state.update_data(name=name)
     data = await state.get_data()
     await state.finish()
 

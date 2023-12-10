@@ -106,7 +106,6 @@ async def show_tasks(callback: types.CallbackQuery):
     """
     Функция просмотра доступных задач.
     """
-    print(callback.from_user.id)
     usr_id = str(callback.from_user.id)
     if usr_id not in globalDict:
         globalDict[usr_id] = 0
