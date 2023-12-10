@@ -1,10 +1,14 @@
 import codecs
 import requests
 import textract
+
+from commands.url_requests import read_problems, read_problem_text
 from create import dp
 from aiogram import types
-from keyboards import tasks_navigation, menu_keyboard, tasks_more_navigation
+from keyboards import tasks_navigation, menu_keyboard, level_ikb, tn_b1, menu_inline_b, tn_b2
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+globalDict_level = dict()
 globalDict = dict()
 problemIdDict = dict()
 
@@ -39,13 +43,12 @@ def navigation(direction, page, count):
     return s, page
 
 
-def print_task(problem, c_id, more=0):
+def print_task(problem, more=0):
     """
     Функция печати данных задачи.
     Args:
         more:
         problem: Словарь с параметрами задачи
-        c_id: Идентификатор соревнования
 
     Returns: Строка с информацией о задаче
     """
@@ -64,15 +67,14 @@ def print_task(problem, c_id, more=0):
          f"<b><em>Уровень:</em></b> {level}\n"
          f"<b><em>Ограничение по времени:</em></b> {problem.get('time_limit')} сек.\n")
 
-    url_problem_text = f'http://localhost:12345/api/v4/contests/{c_id}/problems/{problem.get("id")}/statement?strict=false'
-    response = requests.get(url_problem_text)
-
     style_msg = {"Формат входных данных": "\n\n<b><em>Формат входных данных:</em></b>",
                  "Формат выходных данных": "\n\n<b><em>Формат выходных данных:</em></b>",
                  "Примечание": "\n\n<b><em>Примечание</em></b>",
                  "Пример входных данных": "\n\n<b><em>Пример входных данных</em></b>",
                  "Пример выходных данных": "\n\n<b><em>Пример выходных данных</em></b>"
                  }
+
+    response = read_problem_text(problem.get("id"))
 
     if response.status_code == 200:
         with open(f"files/test{problem.get('id')}.pdf", "wb") as file:
@@ -94,26 +96,37 @@ def print_task(problem, c_id, more=0):
     return s
 
 
-@dp.callback_query_handler(text=['tasks', 'left_task', 'right_task', "more_task"])
+@dp.callback_query_handler(text='tasks')
+async def show_tasks(callback: types.CallbackQuery):
+    await callback.message.edit_text("Выберите уровень сложности.", reply_markup=level_ikb)
+
+
+@dp.callback_query_handler(text=['A', 'B', 'C', 'left_task', 'right_task', "more_task"])
 async def show_tasks(callback: types.CallbackQuery):
     """
     Функция просмотра доступных задач.
     """
+
     usr_id = str(callback.from_user.id)
     if usr_id not in globalDict:
         globalDict[usr_id] = 0
 
-    contests_id = '2'
-    url_problems = f'http://localhost:12345/api/v4/contests/{contests_id}/problems'
-    response = requests.get(url_problems)
-    tasks = response.json()
+    response = read_problems()
 
-    if response.status_code != 200:
-        await callback.message.edit_text(f'Ошибка при отправке запроса: {tasks}',
+    if not response:
+        await callback.message.edit_text(f'Ошибка при отправке запроса.',
                                          parse_mode='HTML',
                                          reply_markup=tasks_navigation,
                                          disable_web_page_preview=True)
     else:
+
+        if 'task' not in callback.data:
+            globalDict_level[usr_id] = callback.data
+            print(globalDict_level[usr_id])
+
+        tasks = [t for t in response if globalDict_level[usr_id] in t.get("label")]
+
+        print(tasks)
         if not tasks:
             await callback.message.edit_text('В данный момент задач нет.\nЗагляните позже.', reply_markup=menu_keyboard)
             await callback.answer()
@@ -124,13 +137,13 @@ async def show_tasks(callback: types.CallbackQuery):
 
             count_tasks = len(tasks)
 
-            if callback.data == 'tasks':
+            if callback.data == globalDict_level[usr_id]:
                 p = globalDict[usr_id]
                 if globalDict[usr_id] <= -1:
                     p = count_tasks + globalDict[usr_id]
 
                 await callback.message.edit_text(
-                    f"<b>№</b> {p + 1}/{count_tasks}\n\n" + print_task(tasks[globalDict[usr_id]], contests_id),
+                    f"<b>№</b> {p + 1}/{count_tasks}\n\n" + print_task(tasks[globalDict[usr_id]]),
                     parse_mode='HTML',
                     reply_markup=tasks_navigation,
                     disable_web_page_preview=True)
@@ -140,13 +153,18 @@ async def show_tasks(callback: types.CallbackQuery):
 
                 print('problemIdDict', problemIdDict[usr_id])
 
-                await callback.message.edit_text(s + print_task(tasks[globalDict[usr_id]], contests_id),
+                await callback.message.edit_text(s + print_task(tasks[globalDict[usr_id]]),
                                                  parse_mode='HTML',
                                                  reply_markup=tasks_navigation,
                                                  disable_web_page_preview=True)
 
             if callback.data == "more_task":
-                text_task = print_task(tasks[globalDict[usr_id]], contests_id, 1)
+                # Клавиатура при подробном просмотре задачи
+                tasks_more_navigation = InlineKeyboardMarkup()
+                tmn_b1 = InlineKeyboardButton(text="Вернуться к просмотру", callback_data=globalDict_level[usr_id])
+                tasks_more_navigation.add(tmn_b1).add(tn_b2).add(menu_inline_b)
+
+                text_task = print_task(tasks[globalDict[usr_id]], 1)
                 await callback.message.edit_text(text_task,
                                                  parse_mode='HTML',
                                                  reply_markup=tasks_more_navigation,

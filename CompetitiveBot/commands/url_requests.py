@@ -22,6 +22,7 @@ SUBMISSION_SOURCE_CODE_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_
 CONTESTS_TEAMS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/teams?strict=false"
 CONTESTS_SCOREBOARD_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/scoreboard?strict=false"
 USERS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/users"
+PROBLEM_URL_TEXT = f'{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/problems/PROBLEM_ID/statement?strict=false'
 
 
 def decode(base64_string):
@@ -37,6 +38,17 @@ def decode(base64_string):
         return decoded_string
     except Exception as e:
         print("Error decoding Base64 string:", str(e))
+
+
+def read_problem_text(p_id):
+    """
+    Функция для получения всех команд
+    Args:
+    Returns: данные ответа в формате JSON
+    """
+    url = PROBLEM_URL_TEXT.replace('PROBLEM_ID', p_id)
+    return requests.get(url)
+
 
 
 def read_teams():

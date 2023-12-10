@@ -46,14 +46,10 @@ async def get_user_name(message: types.Message, state: FSMContext):
         print('Команда успешно успешно добавлена')
         # данные нового пользователя
         password = f"user_{str(message.from_user.id)}"
-        print(password)
         team_id = None
-        for team in teams:
-            print(team.get("name"))
+        for team in read_teams():
             if str(message.from_user.id) == team.get("name").split("_")[-1]:
-                print(str(message.from_user.id), team.get('name').split("_")[-1])
                 team_id = team.get("id")
-
         if team_id:
             new_user_data = {
                 'username': f"{data['name']}_{str(message.from_user.id)}",
