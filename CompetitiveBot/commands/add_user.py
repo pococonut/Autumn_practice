@@ -18,12 +18,16 @@ async def reg_user(callback: types.CallbackQuery):
     if already_exist:
         await callback.message.edit_text("Вы уже зарегистрированы.", reply_markup=menu_keyboard)
     else:
-        await callback.message.edit_text("Отправьте ваше имя в формате Иван Иванов.")
+        await callback.message.edit_text("Отправьте ФИО в формате Иванов Иван Иванович.")
         await User.name.set()
 
 
 @dp.message_handler(state=User.name)
 async def get_user_name(message: types.Message, state: FSMContext):
+    if len(message.text.split()) != 3 or not message.text.replace(" ", "").isalpha():
+        await message.answer("ФИО введено в некорректном формате, повторите ввод.")
+        return
+
     await state.update_data(name=message.text)
     data = await state.get_data()
     await state.finish()

@@ -106,7 +106,7 @@ async def show_tasks(callback: types.CallbackQuery):
     """
     Функция просмотра доступных задач.
     """
-
+    print(callback.from_user.id)
     usr_id = str(callback.from_user.id)
     if usr_id not in globalDict:
         globalDict[usr_id] = 0
@@ -125,8 +125,6 @@ async def show_tasks(callback: types.CallbackQuery):
             print(globalDict_level[usr_id])
 
         tasks = [t for t in response if globalDict_level[usr_id] in t.get("label")]
-
-        print(tasks)
         if not tasks:
             await callback.message.edit_text('В данный момент задач нет.\nЗагляните позже.', reply_markup=menu_keyboard)
             await callback.answer()
