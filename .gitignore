@@ -160,3 +160,4 @@ cython_debug/
 config.py
 .idea
 test.py
+__init__.py
