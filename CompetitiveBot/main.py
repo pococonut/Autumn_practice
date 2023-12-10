@@ -3,8 +3,7 @@ from aiogram.utils import executor
 from commands.url_requests import read_teams
 from create import dp
 from aiogram import types
-# from db.models.user import Base, engine
-from commands import get_tasks, get_languages, submit_solution, get_result, get_scoreboard, add_user, back
+from commands import get_tasks, get_languages, submit_solution, get_result, get_scoreboard, add_user, get_user_info ,back
 from keyboards import menu_keyboard, registration_ikb
 
 logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w",
@@ -17,7 +16,8 @@ async def set_commands(dp):
     await dp.bot.set_my_commands(commands=commands, scope=types.BotCommandScopeAllPrivateChats())
 
 
-DESCRIPTION = ""
+DESCRIPTION = """Телеграм бот предоставляет список доступных задач по программированию трех уровней сложности. Решения принимаются на нескольких доступных языках, благодаря чему, вы можете проверить свои навыки в каждом из них.\n
+Также бот выводит рейтинговую таблицу, где вы можете увидеть свое место среди других пользователей. Это поможет вам отслеживать свой прогресс и стремиться к новым результатам.\n"""
 
 
 @dp.message_handler(commands=['start'])
@@ -42,7 +42,6 @@ async def menu_command_inline(callback: types.CallbackQuery):
     else:
         await callback.message.edit_text("Пройдите этап регистрации.", reply_markup=registration_ikb)
 
-# Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
     executor.start_polling(dp, on_startup=set_commands, skip_updates=True)

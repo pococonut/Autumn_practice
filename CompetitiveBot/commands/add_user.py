@@ -18,13 +18,18 @@ async def reg_user(callback: types.CallbackQuery):
     if already_exist:
         await callback.message.edit_text("Вы уже зарегистрированы.", reply_markup=menu_keyboard)
     else:
-        await callback.message.edit_text("Отправьте ваше имя в формате Иван Иванов.")
+        await callback.message.edit_text("Отправьте ФИО в формате Иванов Иван Иванович.")
         await User.name.set()
 
 
 @dp.message_handler(state=User.name)
 async def get_user_name(message: types.Message, state: FSMContext):
-    await state.update_data(name=message.text)
+    if len(message.text.split()) != 3 or not message.text.replace(" ", "").isalpha():
+        await message.answer("ФИО введено в некорректном формате, повторите ввод.")
+        return
+
+    name = " ".join([w.capitalize() for w in message.text])
+    await state.update_data(name=name)
     data = await state.get_data()
     await state.finish()
 
@@ -46,14 +51,10 @@ async def get_user_name(message: types.Message, state: FSMContext):
         print('Команда успешно успешно добавлена')
         # данные нового пользователя
         password = f"user_{str(message.from_user.id)}"
-        print(password)
         team_id = None
-        for team in teams:
-            print(team.get("name"))
+        for team in read_teams():
             if str(message.from_user.id) == team.get("name").split("_")[-1]:
-                print(str(message.from_user.id), team.get('name').split("_")[-1])
                 team_id = team.get("id")
-
         if team_id:
             new_user_data = {
                 'username': f"{data['name']}_{str(message.from_user.id)}",

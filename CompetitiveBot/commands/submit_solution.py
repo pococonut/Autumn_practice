@@ -60,6 +60,7 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
 async def handle_document(message: types.Message, state: FSMContext):
 
     problem_id = problemIdDict[f'{message.from_user.id}']
+
     data = await state.get_data()
     await state.finish()
 
@@ -75,7 +76,6 @@ async def handle_document(message: types.Message, state: FSMContext):
     filenames = [f'{filename}']
     for u in read_users():
         if str(message.from_user.id) == u.get("username").split("_")[-1]:
-            print(u)
             username = u.get("username")
             break
 
