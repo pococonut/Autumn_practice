@@ -39,12 +39,12 @@ async def user_info(callback: types.CallbackQuery):
                       "2": "🥈",
                       "3": "🥉"}
 
+        line = "-------------------------------\n\n"
         rank = str(info.get('rank'))
         message_info = (f"<b><em>{team_info.get('display_name')}</em></b>\n\n"
                         f"<em>Рейтинг</em>: {rank} место {best_ranks.get(rank) if int(rank) <= 3 else ''}\n"
                         f"<em>Счёт</em>: {info.get('score').get('num_solved')}\n"
                         f"<em>Решённые задачи</em>: {len(solved_problems)}\n\n"
-                        f"-------------------------------\n\n"
-                        f"{message_problems}\n")
+                        f"{line + message_problems if message_problems else message_problems}\n")
 
         await callback.message.edit_text(message_info, reply_markup=menu_ikb, parse_mode="HTML")

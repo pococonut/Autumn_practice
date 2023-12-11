@@ -84,7 +84,7 @@ async def handle_document(message: types.Message, state: FSMContext):
     submit_connection, data = do_api_submit(problem_id, language_id, headers, filenames)
     if submit_connection:
         await message.answer('Решение было получено.', reply_markup=check_result_ikb)
-        globalDict_solutions[u_id] = data
+        globalDict_solutions[int(u_id)] = data
     else:
         await message.answer(f'Ошибка при отправке решения: {data}.')
 
