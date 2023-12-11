@@ -1,12 +1,20 @@
-import requests
 from create import dp
 from aiogram import types
 from tabulate import tabulate
 from keyboards import menu_ikb
-from commands.url_requests import CONTESTS_SCOREBOARD_URL_TEMPLATE, read_teams
+from commands.url_requests import read_teams, read_scoreboard
 
 
-def append_table(t, t_s, a=None, b=None):
+def append_table(data, tbl_show, a=None, b=None):
+    """
+    Функция для заполнения рейтинговой таблицы данными
+    Args:
+        data: Данные рейтинговой таблицы
+        tbl_show: Таблица для заполнения и вывода
+        a: Срез [a:]
+        b: Срез [:b]
+    Returns: Заполненная данными таблица
+    """
 
     def in_cycle(tbl):
         name = [t.get("display_name") for t in read_teams() if t.get("id") == row.get('team_id')][0]
@@ -19,14 +27,14 @@ def append_table(t, t_s, a=None, b=None):
         return tbl
 
     if a and not b:
-        for row in t[:a]:
-            res = in_cycle(t_s)
+        for row in data[:a]:
+            res = in_cycle(tbl_show)
     elif b and not a:
-        for row in t[b:]:
-            res = in_cycle(t_s)
+        for row in data[b:]:
+            res = in_cycle(tbl_show)
     else:
-        for row in t:
-            res = in_cycle(t_s)
+        for row in data:
+            res = in_cycle(tbl_show)
 
     return res
 
@@ -36,19 +44,18 @@ async def scoreboard(callback: types.CallbackQuery):
     """
     Функция для получения и вывода рейтинговой таблицы
     """
-    response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE)
+    result = read_scoreboard()
 
-    if response.status_code == 200:
-        result = response.json()
+    if result:
         table_show = []
-        table = result.get("rows")
+        scoreboard_data = result.get("rows")
 
-        if len(table) > 10:
-            table_show = append_table(table, table_show, a=5)
+        if len(scoreboard_data) > 10:
+            table_show = append_table(scoreboard_data, table_show, a=5)
             table_show.append(["...", "...", "..."])
-            table_show = append_table(table, table_show, b=-5)
+            table_show = append_table(scoreboard_data, table_show, b=-5)
         else:
-            table_show = append_table(table, table_show)
+            table_show = append_table(scoreboard_data, table_show)
 
         table_show = f'<pre>{tabulate(table_show, headers=["Место", "Пользователь", "Счёт"], tablefmt="simple")}</pre>'
         await callback.message.edit_text(table_show, reply_markup=menu_ikb, parse_mode="HTML")

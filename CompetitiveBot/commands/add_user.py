@@ -13,8 +13,10 @@ class User(StatesGroup):
 
 @dp.callback_query_handler(text="registration")
 async def reg_user(callback: types.CallbackQuery):
-    teams = read_teams()
-    already_exist = [True for t in teams if str(callback.from_user.id) in t.get("name")]
+    """
+    Функция начала регистрации пользователя
+    """
+    already_exist = [True for t in read_teams() if str(callback.from_user.id) in t.get("name")]
     if already_exist:
         await callback.message.edit_text("Вы уже зарегистрированы.", reply_markup=menu_keyboard)
     else:
@@ -24,7 +26,10 @@ async def reg_user(callback: types.CallbackQuery):
 
 @dp.message_handler(state=User.name)
 async def get_user_name(message: types.Message, state: FSMContext):
-    if len(message.text.split()) != 3 or not message.text.replace(" ", "").isalpha():
+    """
+    Функция получения имени пользователя и занесения пользователя в БД
+    """
+    if len(message.text.split()) != 3 or not message.text.replace(" ", "").replace("-", "").isalpha():
         await message.answer("ФИО введено в некорректном формате, повторите ввод.")
         return
 
@@ -35,7 +40,7 @@ async def get_user_name(message: types.Message, state: FSMContext):
 
     session = admin_authorization(settings.admin_username, settings.admin_password)
     teams = read_teams()
-    # данные новой команды
+    # Данные новой команды
     unic_name_team = data['name'] + "_" + str(message.from_user.id)
     new_team_data = {
         "display_name": data["name"],
@@ -48,13 +53,13 @@ async def get_user_name(message: types.Message, state: FSMContext):
     response_team = session.post(CONTESTS_TEAMS_URL_TEMPLATE, json=new_team_data)
     # Проверка статуса ответа
     if response_team.status_code == 201:
-        print('Команда успешно успешно добавлена')
-        # данные нового пользователя
+        # Данные нового пользователя
         password = f"user_{str(message.from_user.id)}"
         team_id = None
         for team in read_teams():
             if str(message.from_user.id) == team.get("name").split("_")[-1]:
                 team_id = team.get("id")
+
         if team_id:
             new_user_data = {
                 'username': f"{data['name']}_{str(message.from_user.id)}",
@@ -65,19 +70,16 @@ async def get_user_name(message: types.Message, state: FSMContext):
                 'roles': ['team']
             }
 
-            # Отправка POST-запроса для добавления новой команды
+            # Отправка POST-запроса для добавления нового пользователя
             response_user = session.post(USERS_URL_TEMPLATE, json=new_user_data)
             if response_user.status_code == 201:
                 await message.answer("Вы были успешно зарегистрированы.", reply_markup=menu_keyboard)
             else:
                 await message.answer("Ошибка сервера.")
-                print(response_user.text)
-
         else:
             await message.answer("Ошибка сервера.")
     else:
         await message.answer('Ошибка сервера.')
-        print(response_team.text)
 
 
 

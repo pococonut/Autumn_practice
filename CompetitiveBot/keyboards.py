@@ -5,7 +5,6 @@ menu_inline_b = InlineKeyboardButton(text="Меню", callback_data="menu_inline
 
 back_ikb = InlineKeyboardMarkup()
 back_ikb.add(back_b)
-
 menu_ikb = InlineKeyboardMarkup()
 menu_ikb.add(menu_inline_b)
 
