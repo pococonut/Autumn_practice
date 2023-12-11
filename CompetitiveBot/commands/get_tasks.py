@@ -1,6 +1,6 @@
 import codecs
+import os
 import textract
-
 from commands.general_func import get_lvl_task
 from commands.url_requests import read_problems, read_problem_text
 from create import dp
@@ -9,8 +9,8 @@ from keyboards import tasks_navigation, menu_keyboard, level_ikb, menu_inline_b,
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 globalDict_level = dict()
-globalDict = dict()
-problemIdDict = dict()
+globalDict_move = dict()
+globalDict_task = dict()
 
 
 def navigation(direction, page, count):
@@ -69,11 +69,11 @@ def print_task(problem, more=0):
     response = read_problem_text(problem.get("id"))
 
     if response.status_code == 200:
-        with open(f"files/test{problem.get('id')}.pdf", "wb") as file:
+        path = f"files/description_problem{problem.get('id')}"
+        with open(f"{path}.pdf", "wb") as file:
             file.write(response.content)
             # преобразование файла в текст
-
-            text = codecs.decode(textract.process(f"files/test{problem.get('id')}.pdf"), "UTF-8")
+            text = codecs.decode(textract.process(f"{path}.pdf"), "UTF-8")
 
             if not more:
                 text = text.split("Формат входных данных")[0]
@@ -85,11 +85,13 @@ def print_task(problem, more=0):
             text = text.replace(": ", ":\n")
 
             s += f"<b><em>Описание:</em></b>\n\n{text}"
+
+        os.remove(f"{path}.pdf")
     return s
 
 
 @dp.callback_query_handler(text='tasks')
-async def show_tasks(callback: types.CallbackQuery):
+async def get_lvl(callback: types.CallbackQuery):
     await callback.message.edit_text("Выберите уровень сложности.", reply_markup=level_ikb)
 
 
@@ -99,50 +101,42 @@ async def show_tasks(callback: types.CallbackQuery):
     Функция просмотра доступных задач.
     """
     usr_id = str(callback.from_user.id)
-    if usr_id not in globalDict:
-        globalDict[usr_id] = 0
+    if usr_id not in globalDict_move:
+        globalDict_move[usr_id] = 0
 
     response = read_problems()
 
     if not response:
-        await callback.message.edit_text(f'Ошибка при отправке запроса.',
-                                         parse_mode='HTML',
-                                         reply_markup=tasks_navigation,
-                                         disable_web_page_preview=True)
+        await callback.message.edit_text(f'Ошибка при отправке запроса.', reply_markup=tasks_navigation)
     else:
 
         if 'task' not in callback.data:
             globalDict_level[usr_id] = callback.data
-            print(globalDict_level[usr_id])
 
         tasks = [t for t in response if globalDict_level[usr_id] in t.get("label")]
         if not tasks:
             await callback.message.edit_text('В данный момент задач нет.\nЗагляните позже.', reply_markup=menu_keyboard)
             await callback.answer()
         else:
-            if usr_id not in problemIdDict or callback.data in ('A', 'B', 'C'):
-                problemIdDict[usr_id] = tasks[0].get('id')
-            print('problemIdDict', problemIdDict[usr_id])
+            if usr_id not in globalDict_task or callback.data in ('A', 'B', 'C'):
+                globalDict_task[usr_id] = tasks[0].get('id')
 
             count_tasks = len(tasks)
 
             if callback.data == globalDict_level[usr_id]:
-                p = globalDict[usr_id]
-                if globalDict[usr_id] <= -1:
-                    p = count_tasks + globalDict[usr_id]
-
+                p = globalDict_move[usr_id]
+                if globalDict_move[usr_id] <= -1:
+                    p = count_tasks + globalDict_move[usr_id]
                 await callback.message.edit_text(
-                    f"<b>№</b> {p + 1}/{count_tasks}\n\n" + print_task(tasks[globalDict[usr_id]]),
+                    f"<b>№</b> {p + 1}/{count_tasks}\n\n" + print_task(tasks[globalDict_move[usr_id]]),
                     parse_mode='HTML',
                     reply_markup=tasks_navigation,
                     disable_web_page_preview=True)
+
             elif callback.data in ('left_task', 'right_task'):
-                s, globalDict[usr_id] = navigation(callback.data, globalDict[usr_id], count_tasks)
-                problemIdDict[usr_id] = tasks[globalDict[usr_id]].get('id')
-
-                print('problemIdDict', problemIdDict[usr_id])
-
-                await callback.message.edit_text(s + print_task(tasks[globalDict[usr_id]]),
+                s, globalDict_move[usr_id] = navigation(callback.data, globalDict_move[usr_id], count_tasks)
+                globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
+                await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]),
                                                  parse_mode='HTML',
                                                  reply_markup=tasks_navigation,
                                                  disable_web_page_preview=True)
@@ -153,7 +147,7 @@ async def show_tasks(callback: types.CallbackQuery):
                 tmn_b1 = InlineKeyboardButton(text="Вернуться к просмотру", callback_data=globalDict_level[usr_id])
                 tasks_more_navigation.add(tmn_b1).add(tn_b2).add(menu_inline_b)
 
-                text_task = print_task(tasks[globalDict[usr_id]], 1)
+                text_task = print_task(tasks[globalDict_move[usr_id]], 1)
                 await callback.message.edit_text(text_task,
                                                  parse_mode='HTML',
                                                  reply_markup=tasks_more_navigation,

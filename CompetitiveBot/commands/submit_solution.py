@@ -1,7 +1,8 @@
+import os
 import requests
 import requests.utils
 import base64
-from commands.get_tasks import problemIdDict
+from commands.get_tasks import globalDict_task
 from commands.url_requests import do_api_submit, CONTEST_ID, read_users
 from create import dp, bot
 from aiogram import types
@@ -11,8 +12,8 @@ from config import settings
 from keyboards import languages_ikb, back_ikb, check_result_ikb
 
 
-solutionsID = {}
-previous_messages = {}
+globalDict_solutions = {}
+globalDict_prev_msg = {}
 
 
 class File(StatesGroup):
@@ -22,16 +23,15 @@ class File(StatesGroup):
 
 async def download_file(filename, file_id):
     """
-    Функция для скачивания файла с решением
+    Функция для скачивания файла с решением задачи
     Args:
         filename: Название файла
         file_id: ID файла
     """
 
     file_info = await bot.get_file(file_id)
-    file_path = file_info.file_path
-    file_url = f"https://api.telegram.org/file/bot{settings.api}/{file_path}"
-    # Скачиваем файл
+    path = file_info.file_path
+    file_url = f"https://api.telegram.org/file/bot{settings.api}/{path}"
     response = requests.get(file_url)
     # Сохраняем файл на локальном компьютере
     with open(filename, 'wb') as f:
@@ -52,30 +52,28 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
                     "lang_Python": ["python3", "py"]}
     await state.update_data(lang=languages_id[callback.data])
     await callback.message.edit_text("Отправьте файл с решением.", reply_markup=back_ikb)
-    previous_messages[str(callback.from_user.id)] = callback.message.message_id
+    globalDict_prev_msg[str(callback.from_user.id)] = callback.message.message_id
     await File.next()
 
 
 @dp.message_handler(content_types=types.ContentTypes.DOCUMENT, state=File.file)
 async def handle_document(message: types.Message, state: FSMContext):
-
-    problem_id = problemIdDict[f'{message.from_user.id}']
-
     data = await state.get_data()
     await state.finish()
 
-    # Получаем информацию о файле
-    filename = f'files/solutions/solution_{CONTEST_ID}_{problem_id}_{message.from_user.id}.{data["lang"][1]}'
+    u_id = str(message.from_user.id)
+    problem_id = globalDict_task[f'{u_id}']
+    filename = f'files/solutions/solution_{CONTEST_ID}_{problem_id}_{u_id}.{data["lang"][1]}'
     file_id = message.document.file_id
     # Скачиваем и сохраняем файл
     await download_file(filename, file_id)
-    await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=previous_messages[str(message.from_user.id)])
+    await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=globalDict_prev_msg[u_id])
 
     language_id = data["lang"][0]
-    password = f"user_{str(message.from_user.id)}"
+    password = f"user_{u_id}"
     filenames = [f'{filename}']
     for u in read_users():
-        if str(message.from_user.id) == u.get("username").split("_")[-1]:
+        if u_id == u.get("username").split("_")[-1]:
             username = u.get("username")
             break
 
@@ -84,11 +82,10 @@ async def handle_document(message: types.Message, state: FSMContext):
     headers['Authorization'] = f'Basic {credentials}'
 
     submit_connection, data = do_api_submit(problem_id, language_id, headers, filenames)
-
     if submit_connection:
         await message.answer('Решение было получено.', reply_markup=check_result_ikb)
-        solutionsID[message.from_user.id] = data
+        globalDict_solutions[int(u_id)] = data
     else:
         await message.answer(f'Ошибка при отправке решения: {data}.')
 
-
+    os.remove(filename)

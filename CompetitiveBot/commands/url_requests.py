@@ -1,10 +1,8 @@
 import requests
-import datetime
 import json
 import logging
 import requests.utils
 import base64
-
 from config import admin_authorization, settings
 
 PLATFORM_URL = "http://localhost:12345"
@@ -32,6 +30,7 @@ def decode(base64_string):
         base64_string: Исходный код решения
     Returns: Возвращает декодированную строку
     """
+
     try:
         decoded_bytes = base64.b64decode(base64_string)
         decoded_string = decoded_bytes.decode('utf-8')
@@ -40,61 +39,67 @@ def decode(base64_string):
         print("Error decoding Base64 string:", str(e))
 
 
+def read_scoreboard():
+    """
+    Функция для получения рейтинговой таблицы
+    Returns: Данные рейтинговой таблицы
+    """
+
+    try:
+        response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE)
+        if response.status_code == 200:
+            result = response.json()
+            return result
+        return None
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
+
+
 def read_problem_text(p_id):
     """
-    Функция для получения всех команд
-    Args:
-    Returns: данные ответа в формате JSON
+    Функция для получения описания задачи
+    Args: Идентификатор задачи
+    Returns: Данные ответа
     """
-    url = PROBLEM_URL_TEXT.replace('PROBLEM_ID', p_id)
-    return requests.get(url)
+
+    try:
+        url = PROBLEM_URL_TEXT.replace('PROBLEM_ID', p_id)
+        data = requests.get(url)
+        return data if data else None
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
 
 
 def read_teams():
     """
     Функция для получения всех команд
-    Args:
     Returns: данные ответа в формате JSON
     """
-    url = CONTESTS_TEAMS_URL_TEMPLATE
-    return do_api_request(url)
 
-
-def get_submission_judgement(submission_id):
-    """
-        Функция для получения информации о судействе решения
-    Args:
-        submission_id: Идентификатор решения
-    Returns: Данные об оценке в формате json
-    """
-    url = SUBMISSION_JUDGEMENT_URL_TEMPLATE.replace("SUBMISSION_ID", str(submission_id))
-
-    return do_api_request(url)
-
-
-def get_submission_verdict(submission_id):
-    """
-    Получение вердикта для решения
-    Args:
-        submission_id: Идентификатор решения
-    Returns:
-    """
-    for judgement in get_submission_judgement(submission_id):
-        print(judgement)
-        if judgement["valid"] is True:
-            return judgement["judgement_type_id"]
-
-    return None
+    try:
+        url = CONTESTS_TEAMS_URL_TEMPLATE
+        data = do_api_request(url)
+        return data if data else None
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
 
 
 def read_submissions():
     """
     Получает результаты соревнования.
-    Args:
     Returns: данные ответа в формате JSON
     """
-    url = CONTEST_SUBMISSIONS_URL_TEMPLATE
-    return do_api_request(url)
+
+    try:
+        url = CONTEST_SUBMISSIONS_URL_TEMPLATE
+        data = do_api_request(url)
+        return data
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
 
 
 def read_submission_source_code(submission_id):
@@ -103,15 +108,16 @@ def read_submission_source_code(submission_id):
     Args:
         submission_id: Идентификатор решения
     Returns: Исходный код или None
-
     """
-    url = SUBMISSION_SOURCE_CODE_URL_TEMPLATE.replace("SUBMISSION_ID", str(submission_id))
 
-    data = do_api_request(url)
-
-    if data is not None:
-        return decode(data[0]["source"])
-    else:
+    try:
+        url = SUBMISSION_SOURCE_CODE_URL_TEMPLATE.replace("SUBMISSION_ID", str(submission_id))
+        data = do_api_request(url)
+        if data:
+            return decode(data[0]["source"])
+        return None
+    except RuntimeError as e:
+        logging.warning(e)
         return None
 
 
@@ -243,6 +249,42 @@ def read_problems():
     return problems
 
 
+def get_submission_judgement(submission_id):
+    """
+        Функция для получения информации о судействе решения
+    Args:
+        submission_id: Идентификатор решения
+    Returns: Данные об оценке в формате json
+    """
+
+    try:
+        url = SUBMISSION_JUDGEMENT_URL_TEMPLATE.replace("SUBMISSION_ID", str(submission_id))
+        data = do_api_request(url)
+        return data if data else None
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
+
+
+def get_submission_verdict(submission_id):
+    """
+    Получение вердикта для решения задачи
+    Args:
+        submission_id: Идентификатор решения
+    Returns: Аббревиатура результата или None
+    """
+
+    try:
+        for judgement in get_submission_judgement(submission_id):
+            print(judgement)
+            if judgement["valid"] is True:
+                return judgement["judgement_type_id"]
+        return None
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
+
+
 def do_api_request(url: str):
     """
     Выполняет вызов API для данного запроса и возвращает его данные
@@ -277,12 +319,12 @@ def do_api_request(url: str):
 
 def do_api_submit(problem_id, lang_id, headers, filenames):
     """
-    Отправляет API запрос с предоставленными данными.
+    Отправляет решение задачи
     Args:
-        problem_id:
-        lang_id:
-        headers:
-        filenames:
+        problem_id: Идентификатор задачи
+        lang_id: Идентификатор языка программирования
+        headers: Заголовки HTTP-запроса
+        filenames: Файлы с решением
 
     Returns: True/False - результат отправки запроса, идентификатор отправленного решения
     """
@@ -312,7 +354,6 @@ def do_api_submit(problem_id, lang_id, headers, filenames):
 
     # Мы получили успешный HTTP-ответ.
     # Но проверим, действительно ли мы получили идентификатор отправки.
-
     try:
         submission = json.loads(response.text)
     except json.decoder.JSONDecodeError as e:
@@ -327,9 +368,4 @@ def do_api_submit(problem_id, lang_id, headers, filenames):
         err = f"Ошибка: {error_text}"
         return False, err
 
-    time = datetime.datetime.fromisoformat(submission['time']).strftime('%H:%M:%S')
-    sid = submission['id']
-    print(f"Submission received: id = s{sid}, time = {time}")
-    print(f"Check {PLATFORM_URL}team/submission/{sid} for the result.")
-
-    return True, sid
+    return True, submission['id']

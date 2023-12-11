@@ -25,21 +25,26 @@ async def user_info(callback: types.CallbackQuery):
         all_problems = read_problems()
 
         message_problems = ""
-        for sp in solved_problems:
+        for sp in solved_problems[:6]:
             task_name = "".join([t.get("name") for t in all_problems if t.get("id") == sp.get("problem_id")])
             level = get_lvl_task(sp)
             message_problems += (f"Задача: {task_name}\n"
                                  f"Уровень: {level}\n"
                                  f"Решил первым: {'Да' if sp.get('first_to_solve') else 'Нет'}\n\n")
 
+        if len(solved_problems) > 5:
+            message_problems += "..."
+
         best_ranks = {"1": "🥇",
                       "2": "🥈",
                       "3": "🥉"}
 
+        line = "-------------------------------\n\n"
         rank = str(info.get('rank'))
         message_info = (f"<b><em>{team_info.get('display_name')}</em></b>\n\n"
                         f"<em>Рейтинг</em>: {rank} место {best_ranks.get(rank) if int(rank) <= 3 else ''}\n"
                         f"<em>Счёт</em>: {info.get('score').get('num_solved')}\n"
-                        f"<em>Решённые задачи</em>: {len(solved_problems)}\n\n{message_problems}\n")
+                        f"<em>Решённые задачи</em>: {len(solved_problems)}\n\n"
+                        f"{line + message_problems if message_problems else message_problems}\n")
 
         await callback.message.edit_text(message_info, reply_markup=menu_ikb, parse_mode="HTML")

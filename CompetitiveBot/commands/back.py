@@ -10,7 +10,5 @@ lst_back = ['back', 'back_added', 'back_application', 'back_tasks']
 async def back_func1(callback: types.CallbackQuery, state: FSMContext):
     await state.finish()
     await callback.message.edit_reply_markup()
-
-    if callback.data == 'back':
-        keyboard = menu_keyboard
+    keyboard = menu_keyboard
     await callback.message.edit_text('Действие отменено.', reply_markup=keyboard)
