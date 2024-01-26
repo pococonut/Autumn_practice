@@ -22,6 +22,7 @@ async def user_info(callback: types.CallbackQuery):
 
         info = [t for t in table if t.get("team_id") == team_info.get("id")][0]
         solved_problems = [p for p in info.get("problems") if p.get("solved")]
+
         all_problems = read_problems()
 
         message_problems = ""

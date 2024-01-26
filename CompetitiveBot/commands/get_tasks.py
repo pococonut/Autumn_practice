@@ -1,11 +1,13 @@
 import codecs
 import os
+
+import requests
 import textract
 from commands.general_func import get_lvl_task
-from commands.url_requests import read_problems, read_problem_text
+from commands.url_requests import read_problems, read_problem_text, read_teams, CONTESTS_SCOREBOARD_URL_TEMPLATE
 from create import dp
 from aiogram import types
-from keyboards import tasks_navigation, menu_keyboard, level_ikb, menu_inline_b, tn_b2
+from keyboards import tasks_navigation, menu_keyboard, level_ikb, menu_inline_b, tn_b2, menu_ikb
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 globalDict_level = dict()
@@ -47,7 +49,7 @@ def print_task(problem, more=0):
     """
     Функция печати данных задачи.
     Args:
-        more:
+        more: Параметр для краткого - 0, подробного - 1 показа задачи
         problem: Словарь с параметрами задачи
 
     Returns: Строка с информацией о задаче
@@ -113,11 +115,33 @@ async def show_tasks(callback: types.CallbackQuery):
         if 'task' not in callback.data:
             globalDict_level[usr_id] = callback.data
 
-        tasks = [t for t in response if globalDict_level[usr_id] in t.get("label")]
-        if not tasks:
+        all_tasks = [t for t in response if globalDict_level[usr_id] in t.get("label")]
+
+        if not all_tasks:
             await callback.message.edit_text('В данный момент задач нет.\nЗагляните позже.', reply_markup=menu_keyboard)
             await callback.answer()
         else:
+            solved_tasks_ids = []
+
+            response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE)
+            if response.status_code != 200:
+                await callback.message.edit_text(f'Ошибка при отправке запроса.', reply_markup=menu_ikb, )
+            else:
+                result = response.json()
+                table = result.get("rows")
+                team_info = None
+                for t in read_teams():
+                    if "_" in t.get("name") and str(callback.from_user.id) == t.get("name").split("_")[1]:
+                        team_info = t
+                u_info = [t for t in table if t.get("team_id") == team_info.get("id")][0]
+                solved_tasks_ids = [p.get("problem_id") for p in u_info.get("problems") if p.get("solved")]
+
+            tasks = [t for t in all_tasks if t.get("id") not in solved_tasks_ids]
+            if not tasks:
+                await callback.message.edit_text('Вы решили все задачи данного уровня!\nЗагляните позже.',
+                                                 reply_markup=menu_keyboard)
+                await callback.answer()
+                
             if usr_id not in globalDict_task or callback.data in ('A', 'B', 'C'):
                 globalDict_task[usr_id] = tasks[0].get('id')
 
