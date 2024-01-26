@@ -8,6 +8,11 @@ back_ikb.add(back_b)
 menu_ikb = InlineKeyboardMarkup()
 menu_ikb.add(menu_inline_b)
 
+# Клавиатура для информации о пользователе
+user_info_ikb = InlineKeyboardMarkup()
+user_info_b1 = InlineKeyboardButton(text="Решенные задачи", callback_data="solved_tasks")
+user_info_ikb.add(user_info_b1).add(menu_inline_b)
+
 # Клавиатура для регистрации пользователя
 registration_ikb = InlineKeyboardMarkup()
 r_b1 = InlineKeyboardButton(text="Регистрация", callback_data="registration")
@@ -43,6 +48,17 @@ tn_b4 = InlineKeyboardButton(text="Вперед", callback_data="right_task")
 tn_b5 = InlineKeyboardButton(text="Выбрать уровень", callback_data="tasks")
 tasks_navigation.add(tn_b1).add(tn_b2).add(tn_b3, tn_b4).add(tn_b5).add(menu_inline_b)
 
+# Клавиатура после получения результата тестирования задачи
+after_result_ikb = InlineKeyboardMarkup()
+ar_b1 = InlineKeyboardButton(text="Исходный код", callback_data="code_source")
+after_result_ikb.add(user_info_b1).add(m_b3).add(menu_inline_b)
+
+# Клавиатура просмотра списка решенных задач
+solved_tasks_nav = InlineKeyboardMarkup()
+stn_b1 = InlineKeyboardButton(text="Назад", callback_data="left_s")
+stn_b2 = InlineKeyboardButton(text="Вперед", callback_data="right_s")
+solved_tasks_nav.add(stn_b1, stn_b2).add(ar_b1).add(m_b3).add(menu_inline_b)
+
 # Клавиатура для выбора языка
 languages_ikb = InlineKeyboardMarkup()
 l_b1 = InlineKeyboardButton(text="C", callback_data="lang_C")
@@ -55,11 +71,6 @@ languages_ikb.add(l_b1, l_b2, l_b3, l_b4)
 check_result_ikb = InlineKeyboardMarkup()
 check_result_b1 = InlineKeyboardButton(text="Получить результат", callback_data="check_result")
 check_result_ikb.add(check_result_b1)
-
-# Клавиатура после получения результата тестирования задачи
-after_result_ikb = InlineKeyboardMarkup()
-ar_b1 = InlineKeyboardButton(text="Исходный код", callback_data="code_source")
-after_result_ikb.add(ar_b1).add(menu_inline_b)
 
 # Клавиатура для возврата к просмотру результата решения
 return_result_ikb = InlineKeyboardMarkup()
