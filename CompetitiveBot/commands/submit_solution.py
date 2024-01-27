@@ -1,4 +1,6 @@
 import os
+import tempfile
+
 import requests
 import requests.utils
 import base64
@@ -19,23 +21,6 @@ globalDict_prev_msg = {}
 class File(StatesGroup):
     lang = State()
     file = State()
-
-
-async def download_file(filename, file_id):
-    """
-    Функция для скачивания файла с решением задачи
-    Args:
-        filename: Название файла
-        file_id: ID файла
-    """
-
-    file_info = await bot.get_file(file_id)
-    path = file_info.file_path
-    file_url = f"https://api.telegram.org/file/bot{settings.api}/{path}"
-    response = requests.get(file_url)
-    # Сохраняем файл на локальном компьютере
-    with open(filename, 'wb') as f:
-        f.write(response.content)
 
 
 @dp.callback_query_handler(text=['solution'])
@@ -63,10 +48,16 @@ async def handle_document(message: types.Message, state: FSMContext):
 
     u_id = str(message.from_user.id)
     problem_id = globalDict_task[f'{u_id}']
-    filename = f'files/solutions/solution_{CONTEST_ID}_{problem_id}_{u_id}.{data["lang"][1]}'
-    file_id = message.document.file_id
-    # Скачиваем и сохраняем файл
-    await download_file(filename, file_id)
+
+    # Сохраняем файл
+    file_info = await bot.get_file(message.document.file_id)
+    file_bytes = await bot.download_file(file_info.file_path)
+    # Создаем временный файл и записываем в него содержимое file_bytes
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f'{data["lang"][1]}') as temp_file:
+        temp_file.write(file_bytes.getvalue())
+        filename = temp_file.name
+
+    # Удаляем кнопку отмены отправки файла
     await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=globalDict_prev_msg[u_id])
 
     language_id = data["lang"][0]

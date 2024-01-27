@@ -276,7 +276,6 @@ def get_submission_verdict(submission_id):
 
     try:
         for judgement in get_submission_judgement(submission_id):
-            print(judgement)
             if judgement["valid"] is True:
                 return judgement["judgement_type_id"]
         return None
@@ -306,7 +305,6 @@ def do_api_request(url: str):
         raise RuntimeError(e)
 
     if response.status_code >= 300:
-        print(response.text)
         if response.status_code == 401:
             raise RuntimeError('Authentication failed, please check your DOMjudge credentials in ~/.netrc.')
         else:
