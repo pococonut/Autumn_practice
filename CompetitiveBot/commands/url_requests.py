@@ -346,7 +346,6 @@ def do_api_submit(problem_id, lang_id, headers, filenames):
 
     # Соединение сработало, но, возможно, мы получили сообщение об ошибке HTTP
     if response.status_code >= 300:
-        print(response.text)
         if response.status_code == 401:
             raise RuntimeError('Authentication failed, please check your DOMjudge credentials in ~/.netrc.')
         else:

@@ -1,7 +1,6 @@
-from commands.general_func import get_lvl_task
-from commands.get_tasks import print_task, navigation
-from commands.url_requests import CONTESTS_SCOREBOARD_URL_TEMPLATE, read_teams, read_problems, read_submissions, \
-    read_submission_source_code
+from commands.general_func import get_lvl_task, print_task, navigation
+from commands.url_requests import read_teams, read_problems, read_submissions, \
+    read_submission_source_code, read_scoreboard
 from create import dp
 from aiogram import types
 import requests
@@ -13,13 +12,12 @@ globalDict_move_solved = dict()
 
 @dp.callback_query_handler(text='info')
 async def user_info(callback: types.CallbackQuery):
-    response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE)
+    scoreboard = read_scoreboard()
 
-    if response.status_code != 200:
+    if not scoreboard:
         await callback.message.edit_text(f'Ошибка при отправке запроса.', reply_markup=menu_ikb,)
     else:
-        result = response.json()
-        table = result.get("rows")
+        table = scoreboard.get("rows")
         team_info = None
         for t in read_teams():
             if "_" in t.get("name") and str(callback.from_user.id) == t.get("name").split("_")[1]:
@@ -66,12 +64,12 @@ async def show_solved_tasks(callback: types.CallbackQuery):
         globalDict_move_solved[usr_id] = 0
 
     solved_problems = []
-    response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE)
-    if response.status_code != 200:
+    scoreboard = read_scoreboard()
+
+    if not scoreboard:
         await callback.message.edit_text(f'Ошибка при отправке запроса.', reply_markup=menu_ikb, )
     else:
-        result = response.json()
-        table = result.get("rows")
+        table = scoreboard.get("rows")
         team_info = None
         for t in read_teams():
             if "_" in t.get("name") and str(callback.from_user.id) == t.get("name").split("_")[1]:
@@ -82,7 +80,6 @@ async def show_solved_tasks(callback: types.CallbackQuery):
 
     all_tasks = read_problems()
     solved_problems = [t for t in all_tasks if t.get("id") in solved_problems]
-    print(solved_problems)
     if not solved_problems:
         await callback.message.edit_text(f'У вас нет решенных задач.', reply_markup=menu_ikb)
     else:
@@ -108,18 +105,6 @@ async def show_solved_tasks(callback: types.CallbackQuery):
                                              parse_mode='HTML',
                                              reply_markup=solved_tasks_nav,
                                              disable_web_page_preview=True)
-
-        """if callback.data == "more_task":
-            # Клавиатура при подробном просмотре задачи
-            tasks_more_navigation = InlineKeyboardMarkup()
-            tmn_b1 = InlineKeyboardButton(text="Вернуться к просмотру", callback_data=globalDict_level[usr_id])
-            tasks_more_navigation.add(tmn_b1).add(tn_b2).add(menu_inline_b)
-
-            text_task = print_task(tasks[globalDict_move[usr_id]], 1)
-            await callback.message.edit_text(text_task,
-                                             parse_mode='HTML',
-                                             reply_markup=tasks_more_navigation,
-                                             disable_web_page_preview=True)"""
 
 
 @dp.callback_query_handler(text="code_source")

@@ -35,20 +35,19 @@ def append_table(data, tbl_show, a=None, b=None):
     else:
         for row in data:
             res = in_cycle(tbl_show)
-
     return res
 
 
 @dp.callback_query_handler(text='rating')
-async def scoreboard(callback: types.CallbackQuery):
+async def show_scoreboard(callback: types.CallbackQuery):
     """
     Функция для получения и вывода рейтинговой таблицы
     """
-    result = read_scoreboard()
 
-    if result:
+    scoreboard = read_scoreboard()
+    if scoreboard:
         table_show = []
-        scoreboard_data = result.get("rows")
+        scoreboard_data = scoreboard.get("rows")
 
         if len(scoreboard_data) > 10:
             table_show = append_table(scoreboard_data, table_show, a=5)
