@@ -48,10 +48,14 @@ tn_b4 = InlineKeyboardButton(text="Вперед", callback_data="right_task")
 tn_b5 = InlineKeyboardButton(text="Выбрать уровень", callback_data="tasks")
 tasks_navigation.add(tn_b1).add(tn_b2).add(tn_b3, tn_b4).add(tn_b5).add(menu_inline_b)
 
+# Клавиатура после вывода исходного кода
+source_code_ikb = InlineKeyboardMarkup()
+source_code_ikb.add(user_info_b1).add(menu_inline_b)
+
 # Клавиатура после получения результата тестирования задачи
 after_result_ikb = InlineKeyboardMarkup()
 ar_b1 = InlineKeyboardButton(text="Исходный код", callback_data="code_source")
-after_result_ikb.add(user_info_b1).add(m_b3).add(menu_inline_b)
+after_result_ikb.add(m_b1).add(menu_inline_b)
 
 # Клавиатура просмотра списка решенных задач
 solved_tasks_nav = InlineKeyboardMarkup()

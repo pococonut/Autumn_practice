@@ -71,34 +71,34 @@ async def show_tasks(callback: types.CallbackQuery):
     if not tasks_lst[-1]:
         await callback.message.edit_text(tasks_lst[0], reply_markup=tasks_lst[1])
         await callback.answer()
+    else:
+        if 'task' not in callback.data:
+            globalDict_level[usr_id] = callback.data
 
-    if 'task' not in callback.data:
-        globalDict_level[usr_id] = callback.data
+        tasks = tasks_lst[-1]
+        if usr_id not in globalDict_task or callback.data in ('A', 'B', 'C'):
+            globalDict_task[usr_id] = tasks[0].get('id')
 
-    tasks = tasks_lst[-1]
-    if usr_id not in globalDict_task or callback.data in ('A', 'B', 'C'):
-        globalDict_task[usr_id] = tasks[0].get('id')
+        count_tasks = len(tasks)
 
-    count_tasks = len(tasks)
+        if callback.data == globalDict_level[usr_id]:
+            p = globalDict_move[usr_id]
+            if globalDict_move[usr_id] <= -1:
+                p = count_tasks + globalDict_move[usr_id]
 
-    if callback.data == globalDict_level[usr_id]:
-        p = globalDict_move[usr_id]
-        if globalDict_move[usr_id] <= -1:
-            p = count_tasks + globalDict_move[usr_id]
+            s = f"<b>№</b> {p + 1}/{count_tasks}\n\n"
+            await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), parse_mode='HTML',
+                                             reply_markup=tasks_navigation,
+                                             disable_web_page_preview=True)
 
-        s = f"<b>№</b> {p + 1}/{count_tasks}\n\n"
-        await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), parse_mode='HTML',
-                                         reply_markup=tasks_navigation,
-                                         disable_web_page_preview=True)
+        elif callback.data in ('left_task', 'right_task'):
+            s, globalDict_move[usr_id] = navigation(callback.data, globalDict_move[usr_id], count_tasks)
+            globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
 
-    elif callback.data in ('left_task', 'right_task'):
-        s, globalDict_move[usr_id] = navigation(callback.data, globalDict_move[usr_id], count_tasks)
-        globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
-
-        await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]),
-                                         parse_mode='HTML',
-                                         reply_markup=tasks_navigation,
-                                         disable_web_page_preview=True)
+            await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]),
+                                             parse_mode='HTML',
+                                             reply_markup=tasks_navigation,
+                                             disable_web_page_preview=True)
 
 
 @dp.callback_query_handler(text="more_task")

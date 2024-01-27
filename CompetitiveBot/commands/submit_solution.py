@@ -1,4 +1,3 @@
-import os
 import tempfile
 import requests
 import requests.utils
@@ -76,5 +75,3 @@ async def handle_document(message: types.Message, state: FSMContext):
         globalDict_solutions[int(u_id)] = data
     else:
         await message.answer(f'Ошибка при отправке решения: {data}.')
-
-    os.remove(filename)
