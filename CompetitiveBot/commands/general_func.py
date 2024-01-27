@@ -1,7 +1,5 @@
+import fitz
 from commands.url_requests import read_teams, read_problem_text
-import codecs
-import os
-import textract
 
 
 def get_lvl_task(el):
@@ -99,22 +97,22 @@ def print_task(problem, more=0):
     response = read_problem_text(problem.get("id"))
 
     if response.status_code == 200:
-        path = f"files/description_problem{problem.get('id')}"
-        with open(f"{path}.pdf", "wb") as file:
-            file.write(response.content)
-            # преобразование файла в текст
-            text = codecs.decode(textract.process(f"{path}.pdf"), "UTF-8")
+        pdf_document = fitz.open("pdf", response.content)
+        text = ""
+        # Извлечение текста из каждой страницы PDF и добавление его к переменной text
+        for page_number in range(pdf_document.page_count):
+            page = pdf_document.load_page(page_number)
+            text += page.get_text("text")
 
-            if not more:
-                text = text.split("Формат входных данных")[0]
+        if not more:
+            text = text.split("Формат входных данных")[0]
 
-            text = text.replace('\n', ' ')
-            for k, v in style_msg.items():
-                if k in text:
-                    text = text.replace(k, v)
-            text = text.replace(": ", ":\n")
+        text = text.replace('\n', ' ')
+        for k, v in style_msg.items():
+            if k in text:
+                text = text.replace(k, v)
+        text = text.replace(": ", ":\n")
 
-            s += f"<b><em>Описание:</em></b>\n\n{text}"
+        s += f"<b><em>Описание:</em></b>\n\n{text}"
 
-        os.remove(f"{path}.pdf")
     return s

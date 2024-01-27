@@ -1,16 +1,14 @@
 import os
 import tempfile
-
 import requests
 import requests.utils
 import base64
 from commands.get_tasks import globalDict_task
-from commands.url_requests import do_api_submit, CONTEST_ID, read_users
+from commands.url_requests import do_api_submit, read_users
 from create import dp, bot
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from config import settings
 from keyboards import languages_ikb, back_ikb, check_result_ikb
 
 
