@@ -54,7 +54,6 @@ async def get_user_name(message: types.Message, state: FSMContext):
     # Проверка статуса ответа
     if response_team.status_code == 201:
         # Данные нового пользователя
-        password = f"user_{str(message.from_user.id)}"
         team_id = None
         for team in read_teams():
             if str(message.from_user.id) == team.get("name").split("_")[-1]:
@@ -64,7 +63,7 @@ async def get_user_name(message: types.Message, state: FSMContext):
             new_user_data = {
                 'username': f"{data['name']}_{str(message.from_user.id)}",
                 'name': data["name"],
-                'password': password,
+                'password': f"user_{str(message.from_user.id)}",
                 'enabled': True,
                 "team_id": team_id,
                 'roles': ['team']

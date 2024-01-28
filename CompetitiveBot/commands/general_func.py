@@ -2,6 +2,25 @@ import fitz
 from commands.url_requests import read_teams, read_problem_text
 
 
+def get_page(u_id, global_dict_move, lst):
+    """
+    Функция возвращающая номер просматриваемой задачи из общего количества задач
+    Args:
+        u_id: Идентификатор пользователя
+        global_dict: Словарь с идентификатором просматриваемой задачи
+        global_dict_move: Словарь с номером текущей страницей задачи
+        lst: Список задач
+
+    Returns: номер просматриваемой задачи
+    """
+
+    p = global_dict_move[u_id]
+    if global_dict_move[u_id] <= -1:
+        p = len(lst) + global_dict_move[u_id]
+
+    return p
+
+
 def get_lvl_task(el):
     """
     Возвращает уровень задачи
@@ -10,33 +29,32 @@ def get_lvl_task(el):
     Returns: Уровень
     """
 
-    levels = {"A": "Легкий",
-              "B": "Средний",
-              "C": "Сложный"}
-
+    levels = {"A": "Легкий", "B": "Средний", "C": "Сложный"}
     level = el.get('label')
+
     for k, v in levels.items():
         if k in el.get('label'):
             return v
+
     return level
 
 
-def get_solved_problems(resp, u_id):
+def get_solved_problems(response, u_id):
     """
     Функция для получения информации о команде, пользователе и списка решенных задач
     Args:
-        resp: Ответ сервера
+        response: Ответ сервера
         u_id: Идентификатор пользователя
 
     Returns: Информации о команде, пользователе и список решенных задач
     """
 
-    result = resp.json()
-    table = result.get("rows")
     team_info = None
     for t in read_teams():
         if "_" in t.get("name") and str(u_id) == t.get("name").split("_")[1]:
             team_info = t
+
+    table = response.json().get("rows")
     info = [t for t in table if t.get("team_id") == team_info.get("id")][0]
     return team_info, info, [p for p in info.get("problems") if p.get("solved")]
 
@@ -49,6 +67,7 @@ def navigation(direction, page, count):
     :param count: Количество объектов.
     :return: Строка, Номер объекта.
     """
+
     s = ''
     if 'right' in direction:
         page += 1
@@ -81,10 +100,8 @@ def print_task(problem, more=0):
     Returns: Строка с информацией о задаче
     """
 
-    level = get_lvl_task(problem)
-
     s = (f"<b><em>Название:</em></b> {problem.get('name')}\n"
-         f"<b><em>Уровень:</em></b> {level}\n"
+         f"<b><em>Уровень:</em></b> {get_lvl_task(problem)}\n"
          f"<b><em>Ограничение по времени:</em></b> {problem.get('time_limit')} сек.\n")
 
     style_msg = {"Формат входных данных": "\n\n<b><em>Формат входных данных:</em></b>",
