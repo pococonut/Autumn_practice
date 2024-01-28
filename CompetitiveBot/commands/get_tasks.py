@@ -1,6 +1,6 @@
 from create import dp
 from aiogram import types
-from commands.general_func import print_task, navigation
+from commands.general_func import print_task, navigation, get_page
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from commands.url_requests import read_problems, read_teams, read_scoreboard
 from keyboards import tasks_navigation, menu_keyboard, level_ikb, menu_inline_b, tn_b2, menu_ikb
@@ -74,14 +74,9 @@ async def show_tasks(callback: types.CallbackQuery):
     else:
         tasks = tasks_lst[-1]
         count_tasks = len(tasks)
-
         globalDict_level[usr_id] = callback.data
-        if usr_id not in globalDict_task:
-            globalDict_task[usr_id] = tasks[0].get('id')
 
-        p = globalDict_move[usr_id]
-        if globalDict_move[usr_id] <= -1:
-            p = count_tasks + globalDict_move[usr_id]
+        p = get_page(usr_id, globalDict_task, globalDict_move, tasks)
 
         s = f"<b>№</b> {p + 1}/{count_tasks}\n\n"
         await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), parse_mode='HTML',

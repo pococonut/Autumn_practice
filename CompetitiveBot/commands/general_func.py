@@ -2,6 +2,28 @@ import fitz
 from commands.url_requests import read_teams, read_problem_text
 
 
+def get_page(u_id, global_dict, global_dict_move, lst):
+    """
+    Функция возвращающая номер просматриваемой задачи из общего количества задач
+    Args:
+        u_id: Идентификатор пользователя
+        global_dict: Словарь с идентификатором просматриваемой задачи
+        global_dict_move: Словарь c номером текущей страницей задачи
+        lst: Список задач
+
+    Returns: номер просматриваемой задачи
+    """
+
+    if u_id not in global_dict:
+        global_dict[u_id] = lst[0].get('id')
+
+    p = global_dict_move[u_id]
+    if global_dict_move[u_id] <= -1:
+        p = len(lst) + global_dict_move[u_id]
+
+    return p
+
+
 def get_lvl_task(el):
     """
     Возвращает уровень задачи
