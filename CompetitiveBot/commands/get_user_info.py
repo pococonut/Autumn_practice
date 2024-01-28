@@ -79,21 +79,19 @@ async def show_solved_tasks(callback: types.CallbackQuery):
             if globalDict_move_solved[usr_id] <= -1:
                 p = count_tasks + globalDict_move_solved[usr_id]
 
-            current_page = solved_problems[globalDict_move_solved[usr_id]]
-            first_solution = f"\n\n<b>Решил первым</b>: {'Да' if current_page.get('first_to_solve') else 'Нет'}\n\n"
-
+            curr_problem = solved_problems[globalDict_move_solved[usr_id]]
+            first_solution = f"\n\n<b>Решил первым</b>: {'Да' if curr_problem.get('first_to_solve') else 'Нет'}\n\n"
             await callback.message.edit_text(
-                f"<b>№</b> {p + 1}/{count_tasks}\n\n" + print_task(current_page) + first_solution, parse_mode='HTML',
+                f"<b>№</b> {p + 1}/{count_tasks}\n\n" + print_task(curr_problem) + first_solution, parse_mode='HTML',
                 reply_markup=solved_tasks_nav,
                 disable_web_page_preview=True)
 
         elif callback.data in ('left_s', 'right_s'):
-            current_page = solved_problems[globalDict_move_solved[usr_id]]
-            first_solution = f"\n\n<b>Решил первым</b>: {'Да' if current_page.get('first_to_solve') else 'Нет'}\n\n"
-
             s, globalDict_move_solved[usr_id] = navigation(callback.data, globalDict_move_solved[usr_id], count_tasks)
-            globalDict_solved[usr_id] = current_page.get('id')
-            await callback.message.edit_text(s + print_task(current_page) + first_solution, parse_mode='HTML',
+            curr_problem = solved_problems[globalDict_move_solved[usr_id]]
+            first_solution = f"\n\n<b>Решил первым</b>: {'Да' if curr_problem.get('first_to_solve') else 'Нет'}\n\n"
+            globalDict_solved[usr_id] = curr_problem.get('id')
+            await callback.message.edit_text(s + print_task(curr_problem) + first_solution, parse_mode='HTML',
                                              reply_markup=solved_tasks_nav,
                                              disable_web_page_preview=True)
 
