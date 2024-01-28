@@ -54,6 +54,7 @@ async def get_lvl(callback: types.CallbackQuery):
     """
     Функция выбора сложности задач.
     """
+
     await callback.message.edit_text("Выберите уровень сложности.", reply_markup=level_ikb)
     globalDict_move[str(callback.from_user.id)] = 0
 
@@ -63,6 +64,7 @@ async def show_tasks(callback: types.CallbackQuery):
     """
     Функция просмотра доступных задач.
     """
+
     usr_id = str(callback.from_user.id)
     if usr_id not in globalDict_move:
         globalDict_move[usr_id] = 0
@@ -76,8 +78,12 @@ async def show_tasks(callback: types.CallbackQuery):
         count_tasks = len(tasks)
         globalDict_level[usr_id] = callback.data
 
-        p = get_page(usr_id, globalDict_task, globalDict_move, tasks)
+        if usr_id not in globalDict_task:
+            globalDict_task[usr_id] = tasks[0].get('id')
+        else:
+            globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
 
+        p = get_page(usr_id, globalDict_move, tasks)
         s = f"<b>№</b> {p + 1}/{count_tasks}\n\n"
         await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), parse_mode='HTML',
                                          reply_markup=tasks_navigation,
@@ -122,8 +128,7 @@ async def show_more_task(callback: types.CallbackQuery):
     tasks_more_navigation = InlineKeyboardMarkup()
     tmn_b1 = InlineKeyboardButton(text="Вернуться к просмотру", callback_data=globalDict_level[usr_id])
     tasks_more_navigation.add(tmn_b1).add(tn_b2).add(menu_inline_b)
+    text_task = print_task(tasks_lst[-1][globalDict_move[usr_id]], 1)
 
-    tasks = tasks_lst[-1]
-    text_task = print_task(tasks[globalDict_move[usr_id]], 1)
     await callback.message.edit_text(text_task, parse_mode='HTML', reply_markup=tasks_more_navigation,
                                      disable_web_page_preview=True)

@@ -84,7 +84,11 @@ async def show_solved_tasks(callback: types.CallbackQuery):
         await callback.message.edit_text(s_problems_lst[0], reply_markup=s_problems_lst[1])
     else:
         solved_problems = s_problems_lst[-1]
-        p = get_page(usr_id, globalDict_solved, globalDict_move_solved, solved_problems)
+
+        if usr_id not in globalDict_solved:
+            globalDict_solved[usr_id] = solved_problems[0].get('id')
+
+        p = get_page(usr_id, globalDict_move_solved, solved_problems)
         s = f"<b>№</b> {p + 1}/{len(solved_problems)}\n\n"
         curr_problem = solved_problems[globalDict_move_solved[usr_id]]
         first_solution = f"\n\n<b>Решил первым</b>: {'Да' if curr_problem.get('first_to_solve') else 'Нет'}\n\n"
