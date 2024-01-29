@@ -7,7 +7,6 @@ def get_page(u_id, global_dict_move, lst):
     Функция возвращающая номер просматриваемой задачи из общего количества задач
     Args:
         u_id: Идентификатор пользователя
-        global_dict: Словарь с идентификатором просматриваемой задачи
         global_dict_move: Словарь с номером текущей страницей задачи
         lst: Список задач
 
@@ -37,26 +36,6 @@ def get_lvl_task(el):
             return v
 
     return level
-
-
-def get_solved_problems(response, u_id):
-    """
-    Функция для получения информации о команде, пользователе и списка решенных задач
-    Args:
-        response: Ответ сервера
-        u_id: Идентификатор пользователя
-
-    Returns: Информации о команде, пользователе и список решенных задач
-    """
-
-    team_info = None
-    for t in read_teams():
-        if "_" in t.get("name") and str(u_id) == t.get("name").split("_")[1]:
-            team_info = t
-
-    table = response.json().get("rows")
-    info = [t for t in table if t.get("team_id") == team_info.get("id")][0]
-    return team_info, info, [p for p in info.get("problems") if p.get("solved")]
 
 
 def navigation(direction, page, count):
