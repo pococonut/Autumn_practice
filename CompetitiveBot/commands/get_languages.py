@@ -1,10 +1,10 @@
 from create import dp
-from aiogram import types
+from aiogram import types, F
 from keyboards import menu_ikb
 from commands.url_requests import read_languages
 
 
-@dp.callback_query_handler(text='lang')
+@dp.callback_query(F.data == 'lang')
 async def languages(callback: types.CallbackQuery):
     """
     Функция для получения списка доступных языков программирования

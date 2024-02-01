@@ -2,13 +2,13 @@ import logging
 import time
 from commands.result_types import judgement_types
 from create import dp
-from aiogram import types
+from aiogram import types, F
 from commands.submit_solution import globalDict_solutions
 from keyboards import after_result_ikb
 from commands.url_requests import read_problems, read_submissions, get_submission_verdict
 
 
-@dp.callback_query_handler(text='check_result')
+@dp.callback_query(F.data == 'check_result')
 async def show_tasks(callback: types.CallbackQuery):
     """
     Функция для получения результата тестирования решения задачи
@@ -46,4 +46,4 @@ async def show_tasks(callback: types.CallbackQuery):
                 f"<b><em>Язык программирования:</em></b> {submission.get('language_id')}\n"
                 f"<b><em>Результат:</em></b>\n\n {verdict_txt}")
 
-    await callback.message.edit_text(text, reply_markup=after_result_ikb, parse_mode='HTML')
+    await callback.message.edit_text(text, reply_markup=after_result_ikb)

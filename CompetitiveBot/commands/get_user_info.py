@@ -1,5 +1,5 @@
 from create import dp
-from aiogram import types
+from aiogram import types, F
 from commands.general_func import print_task, navigation, get_page
 from keyboards import menu_ikb, user_info_ikb, solved_tasks_nav, source_code_ikb
 from commands.url_requests import read_teams, read_problems, read_submissions, read_submission_source_code, \
@@ -45,7 +45,7 @@ def get_solved_tasks(u_id):
     return [solved_problems]
 
 
-@dp.callback_query_handler(text='info')
+@dp.callback_query(F.data == 'info')
 async def user_info(callback: types.CallbackQuery):
     """
     Функция для просмотра личной информации пользователя.
@@ -71,10 +71,10 @@ async def user_info(callback: types.CallbackQuery):
         await callback.message.edit_text(message_info, reply_markup=user_info_ikb, parse_mode="HTML")
 
 
-@dp.callback_query_handler(text='solved_tasks')
+@dp.callback_query(F.data == 'solved_tasks')
 async def show_solved_tasks(callback: types.CallbackQuery):
     """
-    Функция просмотра решенных задач.
+    Функция для просмотра решенных задач.
     """
 
     usr_id = str(callback.from_user.id)
@@ -98,10 +98,10 @@ async def show_solved_tasks(callback: types.CallbackQuery):
                                          disable_web_page_preview=True)
 
 
-@dp.callback_query_handler(text=['left_s', 'right_s'])
+@dp.callback_query(F.data.in_({'left_s', 'right_s'}))
 async def show_solved_tasks_lr(callback: types.CallbackQuery):
     """
-    Функция просмотра решенных задач при навигации.
+    Функция для просмотра решенных задач при навигации.
     """
 
     usr_id = str(callback.from_user.id)
@@ -121,10 +121,10 @@ async def show_solved_tasks_lr(callback: types.CallbackQuery):
                                          disable_web_page_preview=True)
 
 
-@dp.callback_query_handler(text="code_source")
+@dp.callback_query(F.data == "code_source")
 async def show_task_code(callback: types.CallbackQuery):
     """
-    Функция вывода исходного кода решения
+    Функция для вывода исходного кода решения
     """
 
     submission = [s for s in read_submissions() if s["problem_id"] == globalDict_solved[str(callback.from_user.id)]]

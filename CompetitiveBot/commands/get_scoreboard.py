@@ -1,5 +1,5 @@
 from create import dp
-from aiogram import types
+from aiogram import types, F
 from tabulate import tabulate
 from keyboards import menu_ikb
 from commands.url_requests import read_teams, read_scoreboard
@@ -38,7 +38,7 @@ def append_table(data, tbl_show, a=None, b=None):
     return res
 
 
-@dp.callback_query_handler(text='rating')
+@dp.callback_query(F.data == 'rating')
 async def show_scoreboard(callback: types.CallbackQuery):
     """
     Функция для получения и вывода рейтинговой таблицы
