@@ -1,8 +1,6 @@
-from aiogram import Bot
-from aiogram.dispatcher import Dispatcher
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from config import settings
+from aiogram import Bot, Dispatcher
+from aiogram.enums import ParseMode
 
-
-bot = Bot(settings.api)
-dp = Dispatcher(bot, storage=MemoryStorage())
+bot = Bot(settings.api, parse_mode=ParseMode.HTML)
+dp = Dispatcher()

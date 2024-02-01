@@ -1,8 +1,8 @@
 from create import dp
-from aiogram import types
+from aiogram import types, F
 from commands.general_func import print_task, navigation, get_page
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from commands.url_requests import read_problems, read_teams, read_scoreboard
+from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton
 from keyboards import tasks_navigation, menu_keyboard, level_ikb, menu_inline_b, tn_b2, menu_ikb
 
 globalDict_level = dict()
@@ -49,7 +49,7 @@ def get_unsolved_tasks(callback_data, u_id):
     return [tasks]
 
 
-@dp.callback_query_handler(text='tasks')
+@dp.callback_query(F.data == 'tasks')
 async def get_lvl(callback: types.CallbackQuery):
     """
     Функция выбора сложности задач.
@@ -59,7 +59,7 @@ async def get_lvl(callback: types.CallbackQuery):
     globalDict_move[str(callback.from_user.id)] = 0
 
 
-@dp.callback_query_handler(text=['A', 'B', 'C'])
+@dp.callback_query(F.data.in_({'A', 'B', 'C'}))
 async def show_tasks(callback: types.CallbackQuery):
     """
     Функция просмотра доступных задач.
@@ -75,7 +75,6 @@ async def show_tasks(callback: types.CallbackQuery):
         await callback.answer()
     else:
         tasks = tasks_lst[-1]
-        count_tasks = len(tasks)
         globalDict_level[usr_id] = callback.data
 
         if usr_id not in globalDict_task:
@@ -84,13 +83,12 @@ async def show_tasks(callback: types.CallbackQuery):
             globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
 
         p = get_page(usr_id, globalDict_move, tasks)
-        s = f"<b>№</b> {p + 1}/{count_tasks}\n\n"
-        await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), parse_mode='HTML',
-                                         reply_markup=tasks_navigation,
+        s = f"<b>№</b> {p + 1}/{len(tasks)}\n\n"
+        await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), reply_markup=tasks_navigation,
                                          disable_web_page_preview=True)
 
 
-@dp.callback_query_handler(text=['left_task', 'right_task'])
+@dp.callback_query(F.data.in_({'left_task', 'right_task'}))
 async def show_tasks_lr(callback: types.CallbackQuery):
     """
     Функция просмотра доступных задач при навигации.
@@ -106,13 +104,11 @@ async def show_tasks_lr(callback: types.CallbackQuery):
         s, globalDict_move[usr_id] = navigation(callback.data, globalDict_move[usr_id], len(tasks))
         globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
 
-        await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]),
-                                         parse_mode='HTML',
-                                         reply_markup=tasks_navigation,
+        await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), reply_markup=tasks_navigation,
                                          disable_web_page_preview=True)
 
 
-@dp.callback_query_handler(text="more_task")
+@dp.callback_query(F.data == "more_task")
 async def show_more_task(callback: types.CallbackQuery):
     """
     Функция для подробного просмотра данных задачи.
@@ -125,10 +121,9 @@ async def show_more_task(callback: types.CallbackQuery):
         await callback.answer()
 
     # Клавиатура при подробном просмотре задачи
-    tasks_more_navigation = InlineKeyboardMarkup()
+    tasks_more_navigation = InlineKeyboardBuilder()
     tmn_b1 = InlineKeyboardButton(text="Вернуться к просмотру", callback_data=globalDict_level[usr_id])
-    tasks_more_navigation.add(tmn_b1).add(tn_b2).add(menu_inline_b)
+    tasks_more_navigation = tasks_more_navigation.add(tmn_b1, tn_b2, menu_inline_b).adjust(1).as_markup()
     text_task = print_task(tasks_lst[-1][globalDict_move[usr_id]], 1)
 
-    await callback.message.edit_text(text_task, parse_mode='HTML', reply_markup=tasks_more_navigation,
-                                     disable_web_page_preview=True)
+    await callback.message.edit_text(text_task, reply_markup=tasks_more_navigation, disable_web_page_preview=True)

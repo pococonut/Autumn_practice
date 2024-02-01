@@ -1,5 +1,5 @@
 import fitz
-from commands.url_requests import read_teams, read_problem_text
+from commands.url_requests import read_problem_text
 
 
 def get_page(u_id, global_dict_move, lst):
