@@ -1,5 +1,6 @@
 import logging
 import time
+from commands.menu import global_Dict_del_msg
 from commands.result_types import judgement_types
 from create import dp
 from aiogram import types, F
@@ -46,4 +47,5 @@ async def show_tasks(callback: types.CallbackQuery):
                 f"<b><em>Язык программирования:</em></b> {submission.get('language_id')}\n"
                 f"<b><em>Результат:</em></b>\n\n {verdict_txt}")
 
-    await callback.message.edit_text(text, reply_markup=after_result_ikb)
+    sent_msg = await callback.message.edit_text(text, reply_markup=after_result_ikb)
+    global_Dict_del_msg[callback.from_user.id] = sent_msg.message_id

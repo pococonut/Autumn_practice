@@ -2,16 +2,19 @@ import tempfile
 import requests
 import requests.utils
 import base64
-from commands.get_tasks import globalDict_task
-from commands.url_requests import do_api_submit, read_users
+
+from commands.general_func import print_task
+from commands.get_tasks import globalDict_task, globalDict_move, get_unsolved_tasks
+from commands.menu import global_Dict_del_msg
+from commands.url_requests import do_api_submit, read_users, read_problems
 from create import dp, bot
 from aiogram import types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from keyboards import languages_ikb, back_ikb, check_result_ikb, menu_keyboard
 
-globalDict_solutions = {}
-globalDict_prev_msg = {}
+globalDict_solutions = dict()
+globalDict_prev_msg = dict()
 
 
 class File(StatesGroup):
@@ -69,8 +72,15 @@ async def choose_lang_file(callback: types.CallbackQuery, state: FSMContext):
     Функция начала отправки решения.
     """
 
-    await callback.message.edit_text("Выберите язык.", reply_markup=languages_ikb)
-    await state.set_state(File.lang)
+    tasks_lst = read_problems()
+    if not tasks_lst:
+        await callback.message.edit_text("Ошибка сервера.")
+        await callback.answer()
+    else:
+        problem = [t for t in tasks_lst if t.get("id") == globalDict_task[f'{str(callback.from_user.id)}']][0]
+        text = print_task(problem).split("<b><em>Описание:</em></b>")[0]
+        await callback.message.edit_text(text + "\nВыберите язык.", reply_markup=languages_ikb)
+        await state.set_state(File.lang)
 
 
 @dp.callback_query(File.lang)
@@ -81,8 +91,7 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
     if callback.data == "back":
         await state.clear()
         await callback.message.edit_reply_markup()
-        keyboard = menu_keyboard
-        await callback.message.edit_text('Действие отменено.', reply_markup=keyboard)
+        await callback.message.edit_text('Действие отменено.')
     else:
         languages_id = {"lang_C": ["c", "c"],
                         "lang_C++": ["cpp", "cpp"],
@@ -90,7 +99,7 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
                         "lang_Python": ["python3", "py"]}
         await state.update_data(lang=languages_id[callback.data])
         await callback.message.edit_text("Отправьте файл с решением.", reply_markup=back_ikb)
-        globalDict_prev_msg[str(callback.from_user.id)] = callback.message.message_id
+        globalDict_prev_msg[callback.from_user.id] = callback.message.message_id
 
 
 @dp.message(F.content_type == types.ContentType.DOCUMENT)
@@ -105,11 +114,13 @@ async def handle_document(message: types.Message, state: FSMContext):
         # Сохраняем файл
         filename = await save_file(message.document.file_id, data["lang"][1])
         # Удаляем кнопку отмены отправки файла
-        await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=globalDict_prev_msg[u_id])
+        await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=globalDict_prev_msg[int(u_id)])
 
         submit_connection, submission_id = send_file(u_id, data["lang"][0], filename)
         if submit_connection:
-            await message.answer('Решение было получено.', reply_markup=check_result_ikb)
+            sent_msg = await message.answer('Решение было получено.', reply_markup=check_result_ikb)
             globalDict_solutions[int(u_id)] = submission_id
+            global_Dict_del_msg[u_id] = sent_msg.message_id
         else:
-            await message.answer(f'Ошибка при отправке файла.', reply_markup=menu_keyboard)
+            sent_msg = await message.answer(f'Ошибка при отправке файла.', reply_markup=menu_keyboard)
+            global_Dict_del_msg[u_id] = sent_msg.message_id

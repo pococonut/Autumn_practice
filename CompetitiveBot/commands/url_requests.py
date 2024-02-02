@@ -266,6 +266,48 @@ def get_submission_judgement(submission_id):
         return None
 
 
+def send_user(session, new_user_data):
+    """
+        Функция для добавления пользователя в БД
+        Args:
+            session: Сессия
+            new_user_data: Информация о пользователе
+
+        Returns: True - пользователь был добавлен, False в противном случае
+        """
+
+    try:
+        response_user = session.post(USERS_URL_TEMPLATE, json=new_user_data)
+        if response_user.status_code != 201:
+            return False
+        return True
+    except RuntimeError as e:
+        logging.warning(e)
+        return False
+
+
+def send_team(session, new_team_data):
+    """
+    Функция для добавления команды в БД
+    Args:
+        session: Сессия
+        new_team_data: Информация о команде
+
+    Returns: True - команда была добавлена, False в противном случае
+    """
+
+    try:
+        # Отправка POST-запроса для добавления новой команды
+        response_team = session.post(CONTESTS_TEAMS_URL_TEMPLATE, json=new_team_data)
+        # Проверка статуса ответа
+        if response_team.status_code != 201:
+            return False
+        return True
+    except RuntimeError as e:
+        logging.warning(e)
+        return False
+
+
 def get_submission_verdict(submission_id):
     """
     Получение вердикта для решения задачи

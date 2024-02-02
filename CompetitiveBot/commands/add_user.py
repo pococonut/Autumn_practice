@@ -1,10 +1,10 @@
-from commands.url_requests import read_teams, USERS_URL_TEMPLATE, CONTESTS_TEAMS_URL_TEMPLATE
-from config import settings, admin_authorization
 from create import dp
 from aiogram import types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
+from config import settings, admin_authorization
 from keyboards import menu_keyboard, registration_ikb
+from commands.url_requests import read_teams, USERS_URL_TEMPLATE, CONTESTS_TEAMS_URL_TEMPLATE, send_user, send_team
 
 
 class User(StatesGroup):
@@ -18,7 +18,7 @@ def user_registration(name, u_id):
         name: Имя пользователя
         u_id: Идентификатор пользователя
 
-    Returns: Список - [Сообщение, клавиатура]
+    Returns: Сообщение, клавиатура
     """
 
     session = admin_authorization(settings.admin_username, settings.admin_password)
@@ -33,10 +33,8 @@ def user_registration(name, u_id):
     }
 
     # Отправка POST-запроса для добавления новой команды
-    response_team = session.post(CONTESTS_TEAMS_URL_TEMPLATE, json=new_team_data)
-    # Проверка статуса ответа
-    if response_team.status_code != 201:
-        return ["Ошибка сервера.", registration_ikb]
+    if not send_team(session, new_team_data):
+        return "Ошибка сервера.", registration_ikb
 
     team_id = None
     for team in read_teams():
@@ -44,7 +42,7 @@ def user_registration(name, u_id):
             team_id = team.get("id")
 
     if not team_id:
-        return ["Ошибка сервера.", registration_ikb]
+        return "Ошибка сервера.", registration_ikb
 
     new_user_data = {
         'username': f"{name}_{u_id}",
@@ -55,12 +53,9 @@ def user_registration(name, u_id):
         'roles': ['team']
     }
 
-    # Отправка POST-запроса для добавления нового пользователя
-    response_user = session.post(USERS_URL_TEMPLATE, json=new_user_data)
-    if response_user.status_code != 201:
-        return ["Ошибка сервера.", registration_ikb]
-
-    return ["Вы были успешно зарегистрированы.", menu_keyboard]
+    if not send_user(session, new_user_data):
+        return "Ошибка сервера.", registration_ikb
+    return "Вы были успешно зарегистрированы.", menu_keyboard
 
 
 @dp.callback_query(F.data == "registration")
@@ -68,7 +63,7 @@ async def reg_user(callback: types.CallbackQuery, state: FSMContext):
     """
     Функция для регистрации пользователя
     """
-    print("registration")
+
     already_exist = [True for t in read_teams() if str(callback.from_user.id) in t.get("name")]
     if already_exist:
         await callback.message.edit_text("Вы уже зарегистрированы.", reply_markup=menu_keyboard)
@@ -92,8 +87,8 @@ async def get_user_name(message: types.Message, state: FSMContext):
     data = await state.get_data()
     await state.clear()
 
-    result_reg = user_registration(data['name'], str(message.from_user.id))
-    await message.answer(result_reg[0], reply_markup=result_reg[1])
+    text, keyboard = user_registration(data['name'], str(message.from_user.id))
+    await message.answer(text, reply_markup=keyboard)
 
 
 
