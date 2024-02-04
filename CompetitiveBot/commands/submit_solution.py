@@ -120,7 +120,7 @@ async def handle_document(message: types.Message, state: FSMContext):
         if submit_connection:
             sent_msg = await message.answer('Решение было получено.', reply_markup=check_result_ikb)
             globalDict_solutions[int(u_id)] = submission_id
-            global_Dict_del_msg[u_id] = sent_msg.message_id
+            global_Dict_del_msg[int(u_id)] = sent_msg.message_id
         else:
             sent_msg = await message.answer(f'Ошибка при отправке файла.', reply_markup=menu_keyboard)
-            global_Dict_del_msg[u_id] = sent_msg.message_id
+            global_Dict_del_msg[int(u_id)] = sent_msg.message_id

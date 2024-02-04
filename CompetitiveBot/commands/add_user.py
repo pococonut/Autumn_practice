@@ -1,10 +1,11 @@
+from commands.menu import global_Dict_del_msg
 from create import dp
 from aiogram import types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from config import settings, admin_authorization
 from keyboards import menu_keyboard, registration_ikb
-from commands.url_requests import read_teams, USERS_URL_TEMPLATE, CONTESTS_TEAMS_URL_TEMPLATE, send_user, send_team
+from commands.url_requests import read_teams, send_user, send_team
 
 
 class User(StatesGroup):
@@ -66,7 +67,8 @@ async def reg_user(callback: types.CallbackQuery, state: FSMContext):
 
     already_exist = [True for t in read_teams() if str(callback.from_user.id) in t.get("name")]
     if already_exist:
-        await callback.message.edit_text("Вы уже зарегистрированы.", reply_markup=menu_keyboard)
+        sent_msg = await callback.message.edit_text("Вы уже зарегистрированы.", reply_markup=menu_keyboard)
+        global_Dict_del_msg[callback.from_user.id] = sent_msg.message_id
     else:
         await callback.message.edit_text("Отправьте ФИО в формате Иванов Иван Иванович.")
         await state.set_state(User.name)
@@ -88,7 +90,9 @@ async def get_user_name(message: types.Message, state: FSMContext):
     await state.clear()
 
     text, keyboard = user_registration(data['name'], str(message.from_user.id))
-    await message.answer(text, reply_markup=keyboard)
+    sent_msg = await message.answer(text, reply_markup=keyboard)
+    global_Dict_del_msg[message.from_user.id] = sent_msg.message_id
+
 
 
 
