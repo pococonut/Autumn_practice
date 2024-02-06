@@ -1,3 +1,4 @@
+from commands.general_func import write_user_values
 from commands.menu import global_Dict_del_msg
 from create import dp
 from aiogram import types, F
@@ -69,6 +70,7 @@ async def reg_user(callback: types.CallbackQuery, state: FSMContext):
     if already_exist:
         sent_msg = await callback.message.edit_text("Вы уже зарегистрированы.", reply_markup=menu_keyboard)
         global_Dict_del_msg[callback.from_user.id] = sent_msg.message_id
+        write_user_values("global_Dict_del_msg", global_Dict_del_msg)
     else:
         await callback.message.edit_text("Отправьте ФИО в формате Иванов Иван Иванович.")
         await state.set_state(User.name)
@@ -92,6 +94,8 @@ async def get_user_name(message: types.Message, state: FSMContext):
     text, keyboard = user_registration(data['name'], str(message.from_user.id))
     sent_msg = await message.answer(text, reply_markup=keyboard)
     global_Dict_del_msg[message.from_user.id] = sent_msg.message_id
+    write_user_values("global_Dict_del_msg", global_Dict_del_msg)
+
 
 
 

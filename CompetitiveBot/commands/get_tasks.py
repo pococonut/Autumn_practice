@@ -1,13 +1,13 @@
 from create import dp
 from aiogram import types, F
-from commands.general_func import print_task, navigation, get_page
+from commands.general_func import print_task, navigation, get_page, read_user_values, write_user_values
 from commands.url_requests import read_problems, read_teams, read_scoreboard
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton
 from keyboards import tasks_navigation, menu_keyboard, level_ikb, menu_inline_b, tn_b2, menu_ikb
 
-globalDict_level = dict()
-globalDict_move = dict()
-globalDict_task = dict()
+globalDict_move = read_user_values("globalDict_move")
+globalDict_level = read_user_values("globalDict_level")
+globalDict_task = read_user_values("globalDict_task")
 
 
 def get_unsolved_tasks(callback_data, u_id):
@@ -30,6 +30,8 @@ def get_unsolved_tasks(callback_data, u_id):
 
     if 'task' not in callback_data:
         globalDict_level[u_id] = callback_data
+        write_user_values("globalDict_level", globalDict_level)
+
     all_tasks = [t for t in problems if globalDict_level[u_id] in t.get("label")]
     if not all_tasks:
         return ['В данный момент задач нет.\nЗагляните позже.', menu_keyboard, tasks]
@@ -57,6 +59,7 @@ async def get_lvl(callback: types.CallbackQuery):
 
     await callback.message.edit_text("Выберите уровень сложности.", reply_markup=level_ikb)
     globalDict_move[str(callback.from_user.id)] = 0
+    write_user_values("globalDict_move", globalDict_move)
 
 
 @dp.callback_query(F.data.in_({'A', 'B', 'C'}))
@@ -68,6 +71,7 @@ async def show_tasks(callback: types.CallbackQuery):
     usr_id = str(callback.from_user.id)
     if usr_id not in globalDict_move:
         globalDict_move[usr_id] = 0
+        write_user_values("globalDict_move", globalDict_move)
 
     tasks_lst = get_unsolved_tasks(callback.data, usr_id)
     if not tasks_lst[-1]:
@@ -76,12 +80,14 @@ async def show_tasks(callback: types.CallbackQuery):
     else:
         tasks = tasks_lst[-1]
         globalDict_level[usr_id] = callback.data
+        write_user_values("globalDict_level", globalDict_level)
 
         if usr_id not in globalDict_task:
             globalDict_task[usr_id] = tasks[0].get('id')
+            write_user_values("globalDict_task", globalDict_task)
         else:
             globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
-
+            write_user_values("globalDict_task", globalDict_task)
         p = get_page(usr_id, globalDict_move, tasks)
         s = f"<b>№</b> {p + 1}/{len(tasks)}\n\n"
         await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), reply_markup=tasks_navigation,
@@ -102,8 +108,10 @@ async def show_tasks_lr(callback: types.CallbackQuery):
     else:
         tasks = tasks_lst[-1]
         s, globalDict_move[usr_id] = navigation(callback.data, globalDict_move[usr_id], len(tasks))
-        globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
+        write_user_values("globalDict_move", globalDict_move)
 
+        globalDict_task[usr_id] = tasks[globalDict_move[usr_id]].get('id')
+        write_user_values("globalDict_task", globalDict_task)
         await callback.message.edit_text(s + print_task(tasks[globalDict_move[usr_id]]), reply_markup=tasks_navigation,
                                          disable_web_page_preview=True)
 

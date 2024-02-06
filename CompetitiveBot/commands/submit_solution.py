@@ -2,9 +2,8 @@ import tempfile
 import requests
 import requests.utils
 import base64
-
-from commands.general_func import print_task
-from commands.get_tasks import globalDict_task, globalDict_move, get_unsolved_tasks
+from commands.general_func import print_task, read_user_values, write_user_values
+from commands.get_tasks import globalDict_task
 from commands.menu import global_Dict_del_msg
 from commands.url_requests import do_api_submit, read_users, read_problems
 from create import dp, bot
@@ -13,8 +12,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from keyboards import languages_ikb, back_ikb, check_result_ikb, menu_keyboard
 
-globalDict_solutions = dict()
-globalDict_prev_msg = dict()
+globalDict_solutions = read_user_values("globalDict_solutions")
+globalDict_prev_msg = read_user_values("globalDict_prev_msg")
 
 
 class File(StatesGroup):
@@ -100,6 +99,7 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
         await state.update_data(lang=languages_id[callback.data])
         await callback.message.edit_text("Отправьте файл с решением.", reply_markup=back_ikb)
         globalDict_prev_msg[callback.from_user.id] = callback.message.message_id
+        write_user_values("globalDict_prev_msg", globalDict_prev_msg)
 
 
 @dp.message(F.content_type == types.ContentType.DOCUMENT)
@@ -119,8 +119,12 @@ async def handle_document(message: types.Message, state: FSMContext):
         submit_connection, submission_id = send_file(u_id, data["lang"][0], filename)
         if submit_connection:
             sent_msg = await message.answer('Решение было получено.', reply_markup=check_result_ikb)
-            globalDict_solutions[int(u_id)] = submission_id
-            global_Dict_del_msg[int(u_id)] = sent_msg.message_id
+            globalDict_solutions[u_id] = submission_id
+            global_Dict_del_msg[u_id] = sent_msg.message_id
+            write_user_values("globalDict_solutions", globalDict_solutions)
+            write_user_values("global_Dict_del_msg", global_Dict_del_msg)
+
         else:
             sent_msg = await message.answer(f'Ошибка при отправке файла.', reply_markup=menu_keyboard)
-            global_Dict_del_msg[int(u_id)] = sent_msg.message_id
+            global_Dict_del_msg[u_id] = sent_msg.message_id
+            write_user_values("global_Dict_del_msg", global_Dict_del_msg)

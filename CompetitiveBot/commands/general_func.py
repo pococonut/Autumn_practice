@@ -1,5 +1,56 @@
 import fitz
 from commands.url_requests import read_problem_text
+import json
+import os
+import logging
+
+
+def read_user_values(dict_name):
+    """
+    Функция для чтения переменных пользователя, используемых при взаимодействии с ботом
+    Args:
+        dict_name: Название словаря с переменными
+
+    Returns: Словарь с переменными
+    """
+
+    filename = "user_values.json"
+    try:
+        if not os.path.exists(filename):
+            with open(filename, 'w') as f:
+                json.dump({}, f)
+
+        with open(filename, 'r') as file:
+            data = json.load(file)
+            g_dict = data.get(f'{dict_name}', {})
+            return g_dict
+
+    except FileNotFoundError:
+        logging.warning(f"File {filename} not found.")
+    except json.JSONDecodeError:
+        logging.warning(f"Error decoding JSON from file {filename}.")
+
+
+def write_user_values(dict_name, g_dict):
+    """
+        Функция для записи переменных пользователя, используемых при взаимодействии с ботом
+        Args:
+            dict_name: Название словаря с переменными
+            g_dict: Словарь с переменными
+
+        Returns: None
+        """
+
+    filename = "user_values.json"
+    try:
+        with open(filename, 'r') as file:
+            data = json.load(file)
+            data[f'{dict_name}'] = g_dict
+
+        with open(filename, 'w') as file:
+            json.dump(data, file)
+    except Exception as e:
+        logging.warning(e)
 
 
 def get_page(u_id, global_dict_move, lst):

@@ -1,5 +1,6 @@
 import logging
 import time
+from commands.general_func import write_user_values
 from commands.menu import global_Dict_del_msg
 from commands.result_types import judgement_types
 from create import dp
@@ -16,7 +17,8 @@ async def show_tasks(callback: types.CallbackQuery):
     """
 
     await callback.message.edit_text("Получаю данные...")
-    submission = [s for s in read_submissions() if s["id"] == globalDict_solutions[callback.from_user.id]][0]
+    u_id = str(callback.from_user.id)
+    submission = [s for s in read_submissions() if s["id"] == globalDict_solutions[u_id]][0]
 
     if not submission:
         text = "Произошел сбой, повторите отправку позже."
@@ -48,4 +50,5 @@ async def show_tasks(callback: types.CallbackQuery):
                 f"<b><em>Результат:</em></b>\n\n {verdict_txt}")
 
     sent_msg = await callback.message.edit_text(text, reply_markup=after_result_ikb)
-    global_Dict_del_msg[callback.from_user.id] = sent_msg.message_id
+    global_Dict_del_msg[u_id] = sent_msg.message_id
+    write_user_values("global_Dict_del_msg", global_Dict_del_msg)

@@ -1,12 +1,12 @@
 from create import dp
 from aiogram import types, F
-from commands.general_func import print_task, navigation, get_page
+from commands.general_func import print_task, navigation, get_page, read_user_values, write_user_values
 from keyboards import menu_ikb, user_info_ikb, solved_tasks_nav, source_code_ikb
 from commands.url_requests import read_teams, read_problems, read_submissions, read_submission_source_code, \
     read_scoreboard
 
-globalDict_solved = dict()
-globalDict_move_solved = dict()
+globalDict_solved = read_user_values("globalDict_solved")
+globalDict_move_solved = read_user_values("globalDict_move_solved")
 
 
 def get_solved_tasks(u_id):
@@ -22,6 +22,7 @@ def get_solved_tasks(u_id):
     solved_problems = []
     if u_id not in globalDict_move_solved:
         globalDict_move_solved[u_id] = 0
+        write_user_values("globalDict_move_solved", globalDict_move_solved)
 
     if not read_scoreboard():
         return ['Ошибка при отправке запроса.', menu_ikb, solved_problems]
@@ -87,6 +88,7 @@ async def show_solved_tasks(callback: types.CallbackQuery):
 
         if usr_id not in globalDict_solved:
             globalDict_solved[usr_id] = solved_problems[0].get('id')
+            write_user_values("globalDict_solved", globalDict_solved)
 
         p = get_page(usr_id, globalDict_move_solved, solved_problems)
         s = f"<b>№</b> {p + 1}/{len(solved_problems)}\n\n"
@@ -112,9 +114,11 @@ async def show_solved_tasks_lr(callback: types.CallbackQuery):
     else:
         s_problems = s_problems_lst[-1]
         s, globalDict_move_solved[usr_id] = navigation(callback.data, globalDict_move_solved[usr_id], len(s_problems))
+        write_user_values("globalDict_move_solved", globalDict_move_solved)
         curr_problem = s_problems[globalDict_move_solved[usr_id]]
         first_solution = f"\n\n<b>Решил первым</b>: {'Да' if curr_problem.get('first_to_solve') else 'Нет'}\n\n"
         globalDict_solved[usr_id] = curr_problem.get('id')
+        write_user_values("globalDict_solved", globalDict_solved)
 
         await callback.message.edit_text(s + print_task(curr_problem) + first_solution, parse_mode='HTML',
                                          reply_markup=solved_tasks_nav,
