@@ -157,15 +157,37 @@ async def reg_user(callback: types.CallbackQuery, state: FSMContext):
         await state.set_state(User.name)
 
 
+def check_user_name(name):
+    """
+    Функция для валидации ФИО
+    Args:
+        name: ФИО пользователя
+
+    Returns: True - ФИО корректно, False - ФИО не корректно
+    """
+
+    if len(name) > 60:
+        return False
+
+    word_count = len(name.split())
+    if word_count != 3:
+        return False
+
+    no_numbers = name.replace(" ", "").replace("-", "").isalpha()
+    if not no_numbers:
+        return False
+
+    return True
+
+
 @dp.message(User.name)
 async def get_user_name(message: types.Message, state: FSMContext):
     """
     Функция для получения имени пользователя и занесения пользователя в БД
     """
 
-    word_count = len(message.text.split())
-    no_numbers = message.text.replace(" ", "").replace("-", "").isalpha()
-    if word_count != 3 or not no_numbers:
+    name_is_correct = check_user_name(message.text)
+    if not name_is_correct:
         await message.answer("ФИО введено в некорректном формате, повторите ввод.")
         return
 
