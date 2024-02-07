@@ -1,12 +1,12 @@
 import logging
 import time
-from commands.general_func import write_user_values
-from commands.menu import global_Dict_del_msg
-from commands.result_types import judgement_types
 from create import dp
 from aiogram import types, F
-from commands.submit_solution import globalDict_solutions
 from keyboards import after_result_ikb
+from commands.menu import global_Dict_del_msg
+from commands.result_types import judgement_types
+from commands.general_func import write_user_values
+from commands.submit_solution import globalDict_solutions
 from commands.url_requests import read_problems, read_submissions, get_submission_verdict
 
 

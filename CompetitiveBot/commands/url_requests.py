@@ -1,8 +1,8 @@
-import requests
 import json
 import logging
-import requests.utils
 import base64
+import requests
+import requests.utils
 from config import admin_authorization, settings
 
 PLATFORM_URL = "http://localhost:12345"
@@ -11,16 +11,27 @@ CONTEST_ID = "2"
 
 # Шаблоны URL-адресов API
 CONTESTS_URL_TEMPLATE = f'{PLATFORM_URL}/api/v4/contests'
-CONTEST_SUBMISSIONS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/submissions?strict=false"
-CONTEST_PROBLEMS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/problems?strict=false"
-CONTEST_LANGUAGES_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/languages"
-CONTEST_TEAMS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/teams?public=true&strict=false"
-SUBMISSION_JUDGEMENT_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/judgements?submission_id=SUBMISSION_ID&strict=false"
-SUBMISSION_SOURCE_CODE_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/submissions/SUBMISSION_ID/source-code?strict=false"
-CONTESTS_TEAMS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/teams?strict=false"
-CONTESTS_SCOREBOARD_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/scoreboard?strict=false"
+
+CONTEST_SUBMISSIONS_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/"
+                                    f"{CONTEST_ID}/submissions?strict=false")
+CONTEST_PROBLEMS_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/"
+                                 f"{CONTEST_ID}/problems?strict=false")
+CONTEST_LANGUAGES_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/"
+                                  f"{CONTEST_ID}/languages")
+CONTEST_TEAMS_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/"
+                              f"{CONTEST_ID}/teams?public=true&strict=false")
+SUBMISSION_JUDGEMENT_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/"
+                                     f"judgements?submission_id=SUBMISSION_ID&strict=false")
+SUBMISSION_SOURCE_CODE_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/"
+                                       f"submissions/SUBMISSION_ID/source-code?strict=false")
+CONTESTS_TEAMS_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/"
+                               f"teams?strict=false")
+CONTESTS_SCOREBOARD_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/"
+                                    f"scoreboard?strict=false")
 USERS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/users"
-PROBLEM_URL_TEXT = f'{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/problems/PROBLEM_ID/statement?strict=false'
+
+PROBLEM_URL_TEXT = (f'{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/'
+                    f'problems/PROBLEM_ID/statement?strict=false')
 
 
 def decode(base64_string):
@@ -36,7 +47,7 @@ def decode(base64_string):
         decoded_string = decoded_bytes.decode('utf-8')
         return decoded_string
     except Exception as e:
-        print("Error decoding Base64 string:", str(e))
+        logging.warning("Error decoding Base64 string:", str(e))
 
 
 def read_scoreboard():
@@ -46,7 +57,7 @@ def read_scoreboard():
     """
 
     try:
-        response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE)
+        response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE, timeout=15)
         if response.status_code == 200:
             result = response.json()
             return result
@@ -65,7 +76,7 @@ def read_problem_text(p_id):
 
     try:
         url = PROBLEM_URL_TEXT.replace('PROBLEM_ID', p_id)
-        data = requests.get(url)
+        data = requests.get(url, timeout=15)
         return data if data else None
     except RuntimeError as e:
         logging.warning(e)
@@ -209,7 +220,7 @@ def read_languages():
             'entry_point_required': item['entry_point_required'] or False,
             'extensions': {item['id']}
         }
-        language['extensions'] |= set([ext for ext in item['extensions']])
+        language['extensions'] |= list([ext for ext in item['extensions']])
         languages.append(language)
 
     logging.info(f'Read {len(languages)} language(s) from the API.')
@@ -344,13 +355,13 @@ def do_api_request(url: str):
     try:
         response = session.get(url)
     except requests.exceptions.RequestException as e:
-        raise RuntimeError(e)
+        raise RuntimeError(e) from e
 
     if response.status_code >= 300:
         if response.status_code == 401:
-            raise RuntimeError('Authentication failed, please check your DOMjudge credentials in ~/.netrc.')
-        else:
-            raise RuntimeError(f'API request {url} failed (code {response.status_code}).')
+            raise RuntimeError('Authentication failed, please check '
+                               'your DOMjudge credentials in ~/.netrc.')
+        raise RuntimeError(f'API request {url} failed (code {response.status_code}).')
 
     logging.debug(f"API call '{url}' returned:\n{response.text}")
 
@@ -380,16 +391,17 @@ def do_api_submit(problem_id, lang_id, headers, filenames):
 
     logging.info(f'connecting to {CONTEST_SUBMISSIONS_URL_TEMPLATE}')
 
-    response = requests.post(CONTEST_SUBMISSIONS_URL_TEMPLATE, data=data, files=files, headers=headers)
+    response = requests.post(CONTEST_SUBMISSIONS_URL_TEMPLATE,
+                             data=data, files=files, headers=headers, timeout=15)
 
     logging.debug(f"API call 'submissions' returned:\n{response.text}")
 
     # Соединение сработало, но, возможно, мы получили сообщение об ошибке HTTP
     if response.status_code >= 300:
         if response.status_code == 401:
-            raise RuntimeError('Authentication failed, please check your DOMjudge credentials in ~/.netrc.')
-        else:
-            raise RuntimeError(f'Submission failed (code {response.status_code})')
+            raise RuntimeError('Authentication failed, please check '
+                               'your DOMjudge credentials in ~/.netrc.')
+        raise RuntimeError(f'Submission failed (code {response.status_code})')
 
     # Мы получили успешный HTTP-ответ.
     # Но проверим, действительно ли мы получили идентификатор отправки.
@@ -401,7 +413,8 @@ def do_api_submit(problem_id, lang_id, headers, filenames):
         err = f"Ошибка: {error_text}"
         return False, err
 
-    if not isinstance(submission, dict) or not 'id' in submission or not isinstance(submission['id'], str):
+    if (not isinstance(submission, dict) or not 'id' in submission
+            or not isinstance(submission['id'], str)):
         error_text = "DOMjudge\'s API returned unexpected JSON data."
         logging.error(error_text)
         err = f"Ошибка: {error_text}"

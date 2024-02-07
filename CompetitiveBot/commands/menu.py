@@ -1,25 +1,30 @@
-from commands.general_func import read_user_values, write_user_values
-from commands.url_requests import read_teams
-from create import dp, bot
 from aiogram import types, F
 from aiogram.filters.command import Command, CommandStart
+from create import dp, bot
+from commands.url_requests import read_teams
+from commands.general_func import read_user_values, write_user_values
 from keyboards import menu_keyboard, registration_ikb
+
 
 global_Dict_del_msg = read_user_values("global_Dict_del_msg")
 
-DESCRIPTION = ("Телеграм бот предоставляет список доступных задач по программированию трех уровней сложности. "
-               "Решения принимаются на нескольких доступных языках, благодаря чему, вы можете проверить свои навыки в "
-               "каждом из них.\n\nТакже бот выводит рейтинговую таблицу, где вы можете увидеть свое место среди других "
-               "пользователей. Это поможет вам отслеживать свой прогресс и стремиться к новым результатам.")
+DESCRIPTION = ("Телеграм бот предоставляет список доступных задач по программированию "
+               "трех уровней сложности. Решения принимаются на нескольких доступных языках, "
+               "благодаря чему, вы можете проверить свои навыки в каждом из них.\n\n"
+               "Также бот выводит рейтинговую таблицу, где вы можете увидеть свое "
+               "место среди других пользователей. Это поможет вам отслеживать свой прогресс "
+               "и стремиться к новым результатам.")
 
 
 def get_menu(u_id):
     """
-    Функция возвращает меню если пользователь зарегистрирован, иначе предлагает пройти этап регистрации
+    Функция возвращает меню если пользователь зарегистрирован,
+    иначе предлагает пройти этап регистрации
     Args:
         u_id: Уникальный идентификатор пользователя в телеграм
     Returns: Текст сообщения и меню
     """
+
     already_exist = [True for t in read_teams() if str(u_id) in t.get("name")]
     if already_exist:
         return "Выберите команду.", menu_keyboard
@@ -28,9 +33,12 @@ def get_menu(u_id):
 
 @dp.message(CommandStart())
 async def start_command(message: types.Message):
+    """
+    Функция вывода приветственного сообщения и начала взаимодействия с телеграм-ботом
+    """
+
     u_id = str(message.from_user.id)
     if global_Dict_del_msg.get(u_id):
-        print("global_Dict_del_msg.get(u_id)", global_Dict_del_msg.get(u_id))
         await bot.delete_message(chat_id=message.chat.id, message_id=global_Dict_del_msg[u_id])
     await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
 
@@ -41,6 +49,10 @@ async def start_command(message: types.Message):
 
 @dp.message(Command('menu'))
 async def menu_command(message: types.Message):
+    """
+    Функция вызова меню
+    """
+
     u_id = str(message.from_user.id)
     if global_Dict_del_msg.get(u_id):
         await bot.delete_message(chat_id=message.chat.id, message_id=global_Dict_del_msg[u_id])
@@ -54,5 +66,9 @@ async def menu_command(message: types.Message):
 
 @dp.callback_query(F.data == 'menu_inline')
 async def menu_command_inline(callback: types.CallbackQuery):
+    """
+    Функция вызова inline меню
+    """
+
     text, keyboard = get_menu(callback.from_user.id)
     await callback.message.edit_text(text, reply_markup=keyboard)
