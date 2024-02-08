@@ -1,41 +1,66 @@
-from create import dp
 from aiogram import types, F
 from tabulate import tabulate
+from create import dp
 from keyboards import menu_ikb
 from commands.url_requests import read_teams, read_scoreboard
 
 
-def append_table(data, tbl_show, a=None, b=None):
+def add_beautiful_row(table, row):
+    """
+    Функция для формирования строки таблицы и ее заполнения
+    Args:
+        table: Таблица
+        row: Строка
+
+    Returns: Заполненная новой строкой таблица
+    """
+
+    name = None
+    for team in read_teams():
+        if team.get("id") == row.get('team_id'):
+            name = team.get("display_name")
+
+    if not name:
+        name = "Demo user"
+    else:
+        name_parts = name.split()
+        surname = name_parts[0]
+        initials = " ".join([f"{p[0]}." for p in name_parts[1:]])
+        name = surname + " " + initials
+
+    rank = str(row.get('rank'))
+    score = str(row.get('score').get("num_solved"))
+    row = [rank + "  ", name, score + "  "]
+    table.append(row)
+
+    return table
+
+
+def append_table(table_data, tbl_show, first_five=None, last_five=None):
     """
     Функция для заполнения рейтинговой таблицы данными
     Args:
-        data: Данные рейтинговой таблицы
+        table_data: Данные рейтинговой таблицы
         tbl_show: Таблица для заполнения и вывода
-        a: Срез [a:]
-        b: Срез [:b]
+        first_five: Срез [first_five:]
+        last_five: Срез [:last_five]
+
     Returns: Заполненная данными таблица
     """
 
-    def in_cycle(tbl):
-        name = [t.get("display_name") for t in read_teams() if t.get("id") == row.get('team_id')][0]
-        if not name:
-            name = "Demo user"
-        else:
-            name_parts = name.split()
-            name = " ".join([name_parts[0]] + [f"{p[0]}." for p in name_parts[1:]])
-        tbl.append([str(row.get('rank')) + "  ", name, str(row.get('score').get("num_solved")) + "  "])
-        return tbl
+    table = ""
 
-    if a and not b:
-        for row in data[:a]:
-            res = in_cycle(tbl_show)
-    elif b and not a:
-        for row in data[b:]:
-            res = in_cycle(tbl_show)
-    else:
-        for row in data:
-            res = in_cycle(tbl_show)
-    return res
+    if not first_five and not last_five:
+        for data in table_data:
+            table = add_beautiful_row(tbl_show, data)
+    elif first_five:
+        for data in table_data[:first_five]:
+            table = add_beautiful_row(tbl_show, data)
+    elif last_five:
+        for data in table_data[last_five:]:
+            table = add_beautiful_row(tbl_show, data)
+
+    return table
 
 
 @dp.callback_query(F.data == 'rating')
@@ -45,18 +70,20 @@ async def show_scoreboard(callback: types.CallbackQuery):
     """
 
     scoreboard = read_scoreboard()
-    if scoreboard:
-        table_show = []
+    if not scoreboard:
+        table = 'Ошибка при отправке запроса'
+    else:
+        table = []
         scoreboard_data = scoreboard.get("rows")
 
         if len(scoreboard_data) > 10:
-            table_show = append_table(scoreboard_data, table_show, a=5)
-            table_show.append(["...", "...", "..."])
-            table_show = append_table(scoreboard_data, table_show, b=-5)
+            table = append_table(scoreboard_data, table, first_five=5)
+            table.append(["...", "...", "..."])
+            table = append_table(scoreboard_data, table, last_five=-5)
         else:
-            table_show = append_table(scoreboard_data, table_show)
+            table = append_table(scoreboard_data, table)
 
-        table_show = f'<pre>{tabulate(table_show, headers=["Место", "Пользователь", "Счёт"], tablefmt="simple")}</pre>'
-        await callback.message.edit_text(table_show, reply_markup=menu_ikb, parse_mode="HTML")
-    else:
-        await callback.message.edit_text('Ошибка при отправке запроса', reply_markup=menu_ikb)
+        table_header = ["Место", "Пользователь", "Счёт"]
+        table = f'<pre>{tabulate(table, headers=table_header, tablefmt="simple")}</pre>'
+
+    await callback.message.edit_text(table, reply_markup=menu_ikb)

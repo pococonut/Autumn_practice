@@ -110,6 +110,29 @@ def check_user_already_exist(user_id):
     return False
 
 
+def check_user_name(name):
+    """
+    Функция для валидации ФИО
+    Args:
+        name: ФИО пользователя
+
+    Returns: True - ФИО корректно, False - ФИО не корректно
+    """
+
+    if len(name) > 60:
+        return False
+
+    word_count = len(name.split())
+    if word_count != 3:
+        return False
+
+    no_numbers = name.replace(" ", "").replace("-", "").isalpha()
+    if not no_numbers:
+        return False
+
+    return True
+
+
 def user_registration(name, user_id):
     """
     Функция для регистрации пользователя в системе
@@ -155,29 +178,6 @@ async def reg_user(callback: types.CallbackQuery, state: FSMContext):
     else:
         await callback.message.edit_text("Отправьте ФИО в формате Иванов Иван Иванович.")
         await state.set_state(User.name)
-
-
-def check_user_name(name):
-    """
-    Функция для валидации ФИО
-    Args:
-        name: ФИО пользователя
-
-    Returns: True - ФИО корректно, False - ФИО не корректно
-    """
-
-    if len(name) > 60:
-        return False
-
-    word_count = len(name.split())
-    if word_count != 3:
-        return False
-
-    no_numbers = name.replace(" ", "").replace("-", "").isalpha()
-    if not no_numbers:
-        return False
-
-    return True
 
 
 @dp.message(User.name)
