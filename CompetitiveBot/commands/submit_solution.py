@@ -1,15 +1,15 @@
 import tempfile
+import base64
 import requests
 import requests.utils
-import base64
+from aiogram import types, F
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import StatesGroup, State
+from create import dp, bot
 from commands.general_func import print_task, read_user_values, write_user_values
 from commands.get_tasks import globalDict_task
 from commands.menu import global_Dict_del_msg
 from commands.url_requests import do_api_submit, read_users, read_problems
-from create import dp, bot
-from aiogram import types, F
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
 from keyboards import languages_ikb, back_ikb, check_result_ikb, menu_keyboard
 
 globalDict_solutions = read_user_values("globalDict_solutions")
@@ -53,6 +53,7 @@ def send_file(u_id, language_id, filename):
     problem_id = globalDict_task[f'{u_id}']
     password = f"user_{u_id}"
     filenames = [f'{filename}']
+
     for u in read_users():
         if u_id == u.get("username").split("_")[-1]:
             username = u.get("username")
