@@ -1,3 +1,4 @@
+import logging
 from aiogram import types, F
 from aiogram.filters.command import Command, CommandStart
 from create import dp, bot
@@ -16,18 +17,18 @@ DESCRIPTION = ("Телеграм бот предоставляет список 
                "и стремиться к новым результатам.")
 
 
-def get_menu(u_id):
+def get_menu(usr_id):
     """
     Функция возвращает меню если пользователь зарегистрирован,
     иначе предлагает пройти этап регистрации
     Args:
-        u_id: Уникальный идентификатор пользователя в телеграм
+        usr_id: Уникальный идентификатор пользователя в телеграм
     Returns: Текст сообщения и меню
     """
 
-    already_exist = [True for t in read_teams() if str(u_id) in t.get("name")]
-    if already_exist:
-        return "Выберите команду.", menu_keyboard
+    for t in read_teams():
+        if usr_id in t.get("name"):
+            return "Выберите команду.", menu_keyboard
     return "Пройдите этап регистрации.", registration_ikb
 
 
@@ -37,13 +38,16 @@ async def start_command(message: types.Message):
     Функция вывода приветственного сообщения и начала взаимодействия с телеграм-ботом
     """
 
-    u_id = str(message.from_user.id)
-    if global_Dict_del_msg.get(u_id):
-        await bot.delete_message(chat_id=message.chat.id, message_id=global_Dict_del_msg[u_id])
-    await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
+    usr_id = str(message.from_user.id)
+    if global_Dict_del_msg.get(usr_id):
+        try:
+            await bot.delete_message(chat_id=message.chat.id, message_id=global_Dict_del_msg[usr_id])
+            await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
+        except Exception as e:
+            logging.exception(e)
 
     sent_msg = await message.answer("Добро пожаловать!\n\n" + DESCRIPTION, reply_markup=registration_ikb)
-    global_Dict_del_msg[u_id] = sent_msg.message_id
+    global_Dict_del_msg[usr_id] = sent_msg.message_id
     write_user_values("global_Dict_del_msg", global_Dict_del_msg)
 
 
@@ -53,14 +57,17 @@ async def menu_command(message: types.Message):
     Функция вызова меню
     """
 
-    u_id = str(message.from_user.id)
-    if global_Dict_del_msg.get(u_id):
-        await bot.delete_message(chat_id=message.chat.id, message_id=global_Dict_del_msg[u_id])
-        await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
+    usr_id = str(message.from_user.id)
+    if global_Dict_del_msg.get(usr_id):
+        try:
+            await bot.delete_message(chat_id=message.chat.id, message_id=global_Dict_del_msg[usr_id])
+            await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
+        except Exception as e:
+            logging.exception(e)
 
-    text, keyboard = get_menu(message.from_user.id)
+    text, keyboard = get_menu(usr_id)
     sent_msg = await message.answer(text, reply_markup=keyboard)
-    global_Dict_del_msg[u_id] = sent_msg.message_id
+    global_Dict_del_msg[usr_id] = sent_msg.message_id
     write_user_values("global_Dict_del_msg", global_Dict_del_msg)
 
 
@@ -70,5 +77,5 @@ async def menu_command_inline(callback: types.CallbackQuery):
     Функция вызова inline меню
     """
 
-    text, keyboard = get_menu(callback.from_user.id)
+    text, keyboard = get_menu(str(callback.from_user.id))
     await callback.message.edit_text(text, reply_markup=keyboard)

@@ -47,12 +47,9 @@ def get_user_team_id(user_id):
 
     Returns: Идентификатор команды, если он был найден, иначе None
     """
-
     for team in read_teams():
         if user_id == get_uid_from_team_name(team):
-            team_id = team.get("id")
-            return team_id
-    return None
+            return team.get("id")
 
 
 def make_team_data(user_name, user_id):
@@ -107,7 +104,6 @@ def check_user_already_exist(user_id):
     for t in read_teams():
         if user_id in t.get("name"):
             return True
-    return False
 
 
 def check_user_name(name):

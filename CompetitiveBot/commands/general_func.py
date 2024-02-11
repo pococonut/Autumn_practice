@@ -52,7 +52,7 @@ def write_user_values(dict_name, g_dict):
         with open(filename, 'w', encoding='UTF-8') as file:
             json.dump(data, file)
     except Exception as e:
-        logging.warning(e)
+        logging.exception(e)
 
 
 def get_page(user_id, global_dict_move, tasks_lst):

@@ -29,7 +29,6 @@ def get_team_info_from_table(u_id, scoreboard):
     for t in table:
         if t.get("team_id") == team_info.get("id"):
             return t
-    return None
 
 
 def get_solved_tasks_ids(team_info):
@@ -125,6 +124,7 @@ async def show_tasks(callback: types.CallbackQuery):
         page = get_page(usr_id, globalDict_move, unsolved_tasks)
         page_of_all = f"<b>№</b> {page + 1}/{len(unsolved_tasks)}\n\n"
         message = page_of_all + print_task(unsolved_tasks[globalDict_move[usr_id]])
+
         await callback.message.edit_text(message, reply_markup=tasks_navigation,
                                          disable_web_page_preview=True)
 

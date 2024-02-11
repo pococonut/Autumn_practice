@@ -220,7 +220,8 @@ def read_languages():
             'entry_point_required': item['entry_point_required'] or False,
             'extensions': {item['id']}
         }
-        language['extensions'] |= list([ext for ext in item['extensions']])
+
+        language['extensions'] |= set([ext for ext in item['extensions']])
         languages.append(language)
 
     logging.info(f'Read {len(languages)} language(s) from the API.')

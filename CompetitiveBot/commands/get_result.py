@@ -22,7 +22,6 @@ def get_submission(usr_id):
     for submission in read_submissions():
         if submission["id"] == globalDict_solutions[usr_id]:
             return submission
-    return None
 
 
 def check_submission_verdict(submission):
@@ -44,7 +43,6 @@ def check_submission_verdict(submission):
             logging.exception(e)
             return None
         time.sleep(1)
-    return None
 
 
 def get_verdict_text(submission_abbreviation):
@@ -84,7 +82,6 @@ def get_problem_name(submission):
     for problem in read_problems():
         if problem.get("id") == submission.get("problem_id"):
             return problem.get("name")
-    return None
 
 
 @dp.callback_query(F.data == 'check_result')
