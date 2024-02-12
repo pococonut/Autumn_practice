@@ -17,8 +17,8 @@ def get_solved_tasks_ids_with_first(team_info):
     Args:
         team_info: Информация о команде
 
-    Returns: Список идентификаторов решенных
-     задач с параметром "Решил первым - Да/Нет"
+    Returns: Список идентификаторов решенных задач
+             с параметром "Решил первым - Да/Нет"
     """
 
     return dict((p.get("problem_id"), p.get("first_to_solve")) for p in team_info.get("problems") if p.get("solved"))
@@ -110,15 +110,15 @@ def get_current_submission(usr_id):
     Returns: Информация о текущем решении
     """
 
-    for s in read_submissions():
-        if s["problem_id"] == globalDict_solved[usr_id]:
-            return s
+    for submission in read_submissions():
+        if submission["problem_id"] == globalDict_solved[usr_id]:
+            return submission
 
 
 @dp.callback_query(F.data == 'info')
 async def user_info(callback: types.CallbackQuery):
     """
-    Функция для просмотра личной информации пользователя.
+    Функция для просмотра личной информации пользователя
     """
 
     scoreboard = read_scoreboard()
@@ -126,7 +126,6 @@ async def user_info(callback: types.CallbackQuery):
         await callback.message.edit_text(f'Ошибка при отправке запроса.', reply_markup=menu_ikb)
     else:
         usr_id = str(callback.from_user.id)
-
         team_info = get_team_info(usr_id)
         rating_usr_info = get_usr_rating_info(team_info, scoreboard)
         solved_problems = [p for p in rating_usr_info.get("problems") if p.get("solved")]
@@ -148,7 +147,7 @@ async def user_info(callback: types.CallbackQuery):
 @dp.callback_query(F.data == 'solved_tasks')
 async def show_solved_tasks(callback: types.CallbackQuery):
     """
-    Функция для просмотра решенных задач.
+    Функция для просмотра решенных задач
     """
 
     usr_id = str(callback.from_user.id)
@@ -181,7 +180,7 @@ async def show_solved_tasks(callback: types.CallbackQuery):
 @dp.callback_query(F.data.in_({'left_s', 'right_s'}))
 async def show_solved_tasks_lr(callback: types.CallbackQuery):
     """
-    Функция для просмотра решенных задач при навигации.
+    Функция для просмотра решенных задач при навигации
     """
 
     usr_id = str(callback.from_user.id)

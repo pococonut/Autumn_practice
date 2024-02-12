@@ -29,6 +29,7 @@ async def save_file(file_id, lang):
 
     Returns: Временный путь файла
     """
+
     file_info = await bot.get_file(file_id)
     file_bytes = await bot.download_file(file_info.file_path)
     # Создаем временный файл и записываем в него содержимое file_bytes
@@ -38,11 +39,11 @@ async def save_file(file_id, lang):
     return filename
 
 
-def send_file(u_id, language_id, filename):
+def send_file(usr_id, language_id, filename):
     """
     Функция для отправки решения на сервер
     Args:
-        u_id: Идентификатор пользователя
+        usr_id: Идентификатор пользователя
         language_id: Идентификатор языка программирования
         filename: Путь к файлу с решением
 
@@ -50,13 +51,13 @@ def send_file(u_id, language_id, filename):
     """
 
     username = ""
-    problem_id = globalDict_task[f'{u_id}']
-    password = f"user_{u_id}"
+    problem_id = globalDict_task[f'{usr_id}']
+    password = f"user_{usr_id}"
     filenames = [f'{filename}']
 
-    for u in read_users():
-        if u_id == u.get("username").split("_")[-1]:
-            username = u.get("username")
+    for user in read_users():
+        if usr_id == user.get("username").split("_")[-1]:
+            username = user.get("username")
             break
 
     headers = {'user-agent': f'domjudge-submit-client ({requests.utils.default_user_agent()})'}
@@ -66,28 +67,64 @@ def send_file(u_id, language_id, filename):
     return do_api_submit(problem_id, language_id, headers, filenames)
 
 
+def get_curr_task_submission(tasks, usr_id):
+    """
+    Функция получения текущей задачи, для отправки решения на нее
+    Args:
+        tasks: Список задач
+        usr_id: Идентификатор пользователя в телеграм
+
+    Returns: Задача, на которую пользователь хочет отправить решение
+    """
+
+    for task in tasks:
+        if task.get("id") == globalDict_task[usr_id]:
+            return task
+
+
+def get_result_sending_file(usr_id, s_id, s_connection):
+    """
+    Функция для получения результата отправки решения задачи
+    Args:
+        usr_id: Идентификатор пользователя в телеграм
+        s_id: Идентификатор решения
+        s_connection: Соединение
+
+    Returns: Сообщение и клавиатура в зависимости от
+             того, было ли получено решение на сервере
+    """
+
+    if s_connection:
+        globalDict_solutions[usr_id] = s_id
+        write_user_values("globalDict_solutions", globalDict_solutions)
+        return 'Решение было получено.', check_result_ikb
+    return 'Ошибка при отправке файла.', menu_keyboard
+
+
 @dp.callback_query(F.data == 'solution')
 async def choose_lang_file(callback: types.CallbackQuery, state: FSMContext):
     """
-    Функция начала отправки решения.
+    Функция начала отправки решения
     """
 
-    tasks_lst = read_problems()
-    if not tasks_lst:
+    tasks = read_problems()
+    if not tasks:
         await callback.message.edit_text("Ошибка сервера.")
         await callback.answer()
     else:
-        problem = [t for t in tasks_lst if t.get("id") == globalDict_task[f'{str(callback.from_user.id)}']][0]
-        text = print_task(problem).split("<b><em>Описание:</em></b>")[0]
-        await callback.message.edit_text(text + "\nВыберите язык.", reply_markup=languages_ikb)
+        usr_id = str(callback.from_user.id)
+        problem = get_curr_task_submission(tasks, usr_id)
+        text = print_task(problem).split("<b><em>Описание:</em></b>")[0] + "\nВыберите язык."
+        await callback.message.edit_text(text, reply_markup=languages_ikb)
         await state.set_state(File.lang)
 
 
 @dp.callback_query(File.lang)
 async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
     """
-    Функция для выбора языка для отправки решения.
+    Функция выбора языка для отправки решения
     """
+
     if callback.data == "back":
         await state.clear()
         await callback.message.edit_reply_markup()
@@ -97,6 +134,7 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
                         "lang_C++": ["cpp", "cpp"],
                         "lang_Java": ["java", "java"],
                         "lang_Python": ["python3", "py"]}
+
         await state.update_data(lang=languages_id[callback.data])
         await callback.message.edit_text("Отправьте файл с решением.", reply_markup=back_ikb)
         globalDict_prev_msg[callback.from_user.id] = callback.message.message_id
@@ -106,26 +144,25 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
 @dp.message(F.content_type == types.ContentType.DOCUMENT)
 async def handle_document(message: types.Message, state: FSMContext):
     """
-    Функция для отправки решения на сервер.
+    Функция для отправки решения на сервер
     """
+
+    usr_id = str(message.from_user.id)
     data = await state.get_data()
-    if data:
-        u_id = str(message.from_user.id)
+
+    if not data:
+        text, keyboard = 'Ошибка при отправке файла.', menu_keyboard
+    else:
         await state.clear()
         # Сохраняем файл
         filename = await save_file(message.document.file_id, data["lang"][1])
         # Удаляем кнопку отмены отправки файла
-        await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=globalDict_prev_msg[int(u_id)])
+        msg_id = globalDict_prev_msg[int(usr_id)]
+        await bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=msg_id)
 
-        submit_connection, submission_id = send_file(u_id, data["lang"][0], filename)
-        if submit_connection:
-            sent_msg = await message.answer('Решение было получено.', reply_markup=check_result_ikb)
-            globalDict_solutions[u_id] = submission_id
-            global_Dict_del_msg[u_id] = sent_msg.message_id
-            write_user_values("globalDict_solutions", globalDict_solutions)
-            write_user_values("global_Dict_del_msg", global_Dict_del_msg)
+        submit_connection, submission_id = send_file(usr_id, data["lang"][0], filename)
+        text, keyboard = get_result_sending_file(usr_id, submission_id, submit_connection)
 
-        else:
-            sent_msg = await message.answer(f'Ошибка при отправке файла.', reply_markup=menu_keyboard)
-            global_Dict_del_msg[u_id] = sent_msg.message_id
-            write_user_values("global_Dict_del_msg", global_Dict_del_msg)
+    sent_msg = await message.answer(text, reply_markup=keyboard)
+    global_Dict_del_msg[usr_id] = sent_msg.message_id
+    write_user_values("global_Dict_del_msg", global_Dict_del_msg)

@@ -11,27 +11,16 @@ CONTEST_ID = "2"
 
 # Шаблоны URL-адресов API
 CONTESTS_URL_TEMPLATE = f'{PLATFORM_URL}/api/v4/contests'
-
-CONTEST_SUBMISSIONS_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/"
-                                    f"{CONTEST_ID}/submissions?strict=false")
-CONTEST_PROBLEMS_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/"
-                                 f"{CONTEST_ID}/problems?strict=false")
-CONTEST_LANGUAGES_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/"
-                                  f"{CONTEST_ID}/languages")
-CONTEST_TEAMS_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/"
-                              f"{CONTEST_ID}/teams?public=true&strict=false")
-SUBMISSION_JUDGEMENT_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/"
-                                     f"judgements?submission_id=SUBMISSION_ID&strict=false")
-SUBMISSION_SOURCE_CODE_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/"
-                                       f"submissions/SUBMISSION_ID/source-code?strict=false")
-CONTESTS_TEAMS_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/"
-                               f"teams?strict=false")
-CONTESTS_SCOREBOARD_URL_TEMPLATE = (f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/"
-                                    f"scoreboard?strict=false")
+CONTEST_SUBMISSIONS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/submissions?strict=false"
+CONTEST_PROBLEMS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/problems?strict=false"
+CONTEST_LANGUAGES_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/languages"
+CONTEST_TEAMS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/teams?public=true&strict=false"
+SUBMISSION_JUDGEMENT_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/judgements?submission_id=SUBMISSION_ID&strict=false"
+SUBMISSION_SOURCE_CODE_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/submissions/SUBMISSION_ID/source-code?strict=false"
+CONTESTS_TEAMS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/teams?strict=false"
+CONTESTS_SCOREBOARD_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/scoreboard?strict=false"
 USERS_URL_TEMPLATE = f"{PLATFORM_URL}/api/v4/users"
-
-PROBLEM_URL_TEXT = (f'{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/'
-                    f'problems/PROBLEM_ID/statement?strict=false')
+PROBLEM_URL_TEXT = f'{PLATFORM_URL}/api/v4/contests/{CONTEST_ID}/problems/PROBLEM_ID/statement?strict=false'
 
 
 def decode(base64_string):
@@ -70,8 +59,10 @@ def read_scoreboard():
 def read_problem_text(p_id):
     """
     Функция для получения описания задачи
-    Args: Идентификатор задачи
-    Returns: Данные ответа
+    Args:
+        p_id: Идентификатор задачи
+
+    Returns: Текст задачи в виде pdf файла
     """
 
     try:
@@ -81,6 +72,38 @@ def read_problem_text(p_id):
     except RuntimeError as e:
         logging.warning(e)
         return None
+
+
+def read_problems():
+    """
+    Функция для получения всех задач текущего соревнования
+    Returns: Задачи или None если возникла ошибка
+    """
+
+    try:
+        data = do_api_request(CONTEST_PROBLEMS_URL_TEMPLATE)
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
+
+    if not isinstance(data, list):
+        logging.warning("DOMjudge's API returned unexpected JSON data for endpoint 'problems'.")
+        return None
+
+    problems = []
+
+    for problem in data:
+        if ('id' not in problem
+                or 'label' not in problem
+                or not problem['id']
+                or not problem['label']):
+            logging.warning("DOMjudge's API returned unexpected JSON data for 'problems'.")
+            return None
+        problems.append(problem)
+
+    logging.info(f'Read {len(problems)} problem(s) from the API.')
+
+    return problems
 
 
 def read_teams():
@@ -96,6 +119,33 @@ def read_teams():
     except RuntimeError as e:
         logging.warning(e)
         return None
+
+
+def read_users():
+    """
+    Функция для получения всех пользователей
+    Returns: Пользователи или None если возникла ошибка
+    """
+
+    try:
+        data = do_api_request(USERS_URL_TEMPLATE)
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
+
+    if not isinstance(data, list):
+        logging.warning("DOMjudge's API returned unexpected JSON data for endpoint 'contests'.")
+        return None
+
+    users = []
+    for user in data:
+        if not user['id']:
+            logging.warning("DOMjudge's API returned unexpected JSON data for 'contests'.")
+            return None
+        users.append(user)
+
+    logging.info(f'Read {len(users)} contest(s) from the API.')
+    return users
 
 
 def read_submissions():
@@ -130,32 +180,6 @@ def read_submission_source_code(submission_id):
     except RuntimeError as e:
         logging.warning(e)
         return None
-
-
-def read_users():
-    """
-    Функция для получения всех пользователей
-    Returns: Пользователи или None если возникла ошибка
-    """
-    try:
-        data = do_api_request(USERS_URL_TEMPLATE)
-    except RuntimeError as e:
-        logging.warning(e)
-        return None
-
-    if not isinstance(data, list):
-        logging.warning("DOMjudge's API returned unexpected JSON data for endpoint 'contests'.")
-        return None
-
-    users = []
-    for user in data:
-        if not user['id']:
-            logging.warning("DOMjudge's API returned unexpected JSON data for 'contests'.")
-            return None
-        users.append(user)
-
-    logging.info(f'Read {len(users)} contest(s) from the API.')
-    return users
 
 
 def read_contests():
@@ -229,38 +253,6 @@ def read_languages():
     return languages
 
 
-def read_problems():
-    """
-    Функция для получения всех задач текущего соревнования
-    Returns: Задачи или None если возникла ошибка
-    """
-
-    try:
-        data = do_api_request(CONTEST_PROBLEMS_URL_TEMPLATE)
-    except RuntimeError as e:
-        logging.warning(e)
-        return None
-
-    if not isinstance(data, list):
-        logging.warning("DOMjudge's API returned unexpected JSON data for endpoint 'problems'.")
-        return None
-
-    problems = []
-
-    for problem in data:
-        if ('id' not in problem
-                or 'label' not in problem
-                or not problem['id']
-                or not problem['label']):
-            logging.warning("DOMjudge's API returned unexpected JSON data for 'problems'.")
-            return None
-        problems.append(problem)
-
-    logging.info(f'Read {len(problems)} problem(s) from the API.')
-
-    return problems
-
-
 def get_submission_judgement(submission_id):
     """
         Функция для получения информации о судействе решения
@@ -278,15 +270,33 @@ def get_submission_judgement(submission_id):
         return None
 
 
+def get_submission_verdict(submission_id):
+    """
+    Получение вердикта для решения задачи
+    Args:
+        submission_id: Идентификатор решения
+    Returns: Аббревиатура результата или None
+    """
+
+    try:
+        for judgement in get_submission_judgement(submission_id):
+            if judgement["valid"] is True:
+                return judgement["judgement_type_id"]
+        return None
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
+
+
 def send_user(session, new_user_data):
     """
-        Функция для добавления пользователя в БД
-        Args:
-            session: Сессия
-            new_user_data: Информация о пользователе
+    Функция для добавления пользователя в БД
+    Args:
+        session: Сессия
+        new_user_data: Информация о пользователе
 
-        Returns: True - пользователь был добавлен, False в противном случае
-        """
+    Returns: True - пользователь был добавлен, False в противном случае
+    """
 
     try:
         response_user = session.post(USERS_URL_TEMPLATE, json=new_user_data)
@@ -320,32 +330,15 @@ def send_team(session, new_team_data):
         return False
 
 
-def get_submission_verdict(submission_id):
-    """
-    Получение вердикта для решения задачи
-    Args:
-        submission_id: Идентификатор решения
-    Returns: Аббревиатура результата или None
-    """
-
-    try:
-        for judgement in get_submission_judgement(submission_id):
-            if judgement["valid"] is True:
-                return judgement["judgement_type_id"]
-        return None
-    except RuntimeError as e:
-        logging.warning(e)
-        return None
-
-
 def do_api_request(url: str):
     """
     Выполняет вызов API для данного запроса и возвращает его данные
     Args:
-        url:
+        url: Адрес платформы
 
     Returns: Содержимое запроса
     """
+
     session = admin_authorization(settings.admin_username, settings.admin_password)
 
     if not PLATFORM_URL:

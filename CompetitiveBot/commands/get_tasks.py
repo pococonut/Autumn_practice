@@ -82,7 +82,7 @@ def get_unsolved_tasks(callback_data, u_id):
 @dp.callback_query(F.data == 'tasks')
 async def get_level(callback: types.CallbackQuery):
     """
-    Функция выбора сложности задач.
+    Функция выбора сложности задач
     """
 
     await callback.message.edit_text("Выберите уровень сложности.", reply_markup=level_ikb)
@@ -93,7 +93,7 @@ async def get_level(callback: types.CallbackQuery):
 @dp.callback_query(F.data.in_({'A', 'B', 'C'}))
 async def show_tasks(callback: types.CallbackQuery):
     """
-    Функция просмотра доступных задач.
+    Функция просмотра доступных задач
     """
 
     usr_id = str(callback.from_user.id)
@@ -132,8 +132,9 @@ async def show_tasks(callback: types.CallbackQuery):
 @dp.callback_query(F.data.in_({'left_task', 'right_task'}))
 async def show_tasks_lr(callback: types.CallbackQuery):
     """
-    Функция просмотра доступных задач при навигации.
+    Функция просмотра доступных задач при навигации
     """
+
     usr_id = str(callback.from_user.id)
     tasks_request_result = get_unsolved_tasks(callback.data, usr_id)
     unsolved_tasks = tasks_request_result[-1]
@@ -161,7 +162,7 @@ async def show_tasks_lr(callback: types.CallbackQuery):
 @dp.callback_query(F.data == "more_task")
 async def show_more_task(callback: types.CallbackQuery):
     """
-    Функция для подробного просмотра данных задачи.
+    Функция для подробного просмотра данных задачи
     """
 
     usr_id = str(callback.from_user.id)

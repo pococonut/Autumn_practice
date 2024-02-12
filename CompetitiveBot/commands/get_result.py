@@ -3,9 +3,7 @@ import time
 from aiogram import types, F
 from create import dp
 from keyboards import after_result_ikb
-from commands.menu import global_Dict_del_msg
 from commands.result_types import judgement_types
-from commands.general_func import write_user_values
 from commands.submit_solution import globalDict_solutions
 from commands.url_requests import read_problems, read_submissions, get_submission_verdict
 
@@ -14,7 +12,7 @@ def get_submission(usr_id):
     """
     Функция для получения отправленного пользователем решения из всего списка решений
     Args:
-        usr_id: Идентификатор пользователя
+        usr_id: Идентификатор пользователя в телеграмм
 
     Returns: Решение
     """
@@ -26,7 +24,7 @@ def get_submission(usr_id):
 
 def check_submission_verdict(submission):
     """
-    Функция для ожидания результата сервера судьи
+    Функция ожидания результата от сервера судьи
     Args:
         submission: Решение задачи
 
@@ -106,6 +104,4 @@ async def show_user_result(callback: types.CallbackQuery):
                           f"<b><em>Язык программирования:</em></b> {submission_lang}\n"
                           f"<b><em>Результат:</em></b>\n\n {verdict_text}")
 
-    sent_msg = await callback.message.edit_text(judge_response, reply_markup=after_result_ikb)
-    global_Dict_del_msg[usr_id] = sent_msg.message_id
-    write_user_values("global_Dict_del_msg", global_Dict_del_msg)
+    await callback.message.edit_text(judge_response, reply_markup=after_result_ikb)

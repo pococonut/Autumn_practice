@@ -26,8 +26,8 @@ def get_menu(usr_id):
     Returns: Текст сообщения и меню
     """
 
-    for t in read_teams():
-        if usr_id in t.get("name"):
+    for team in read_teams():
+        if usr_id in team.get("name"):
             return "Выберите команду.", menu_keyboard
     return "Пройдите этап регистрации.", registration_ikb
 

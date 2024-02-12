@@ -27,8 +27,8 @@ def make_name_capital_letters(user_name):
 
 def get_uid_from_team_name(team):
     """
-    Функция возвращает идентификатор пользователя телеграм,
-    который содержится в названии команды
+    Функция возвращает идентификатор пользователя в
+    телеграм, который содержится в названии команды
     Args:
         team: Команда
 
@@ -52,21 +52,21 @@ def get_user_team_id(user_id):
             return team.get("id")
 
 
-def make_team_data(user_name, user_id):
+def make_team_data(team_name, user_id):
     """
     Функция для создания словаря с данными новой команды
     Args:
-        user_name: Имя пользователя
+        team_name: Имя пользователя
         user_id: Идентификатор пользователя в телеграм
 
     Returns: Словарь с данными новой команды
     """
 
-    unic_user_name = user_name + "_" + user_id
+    unic_team_name = team_name + "_" + user_id
     new_team_id = str(int(read_teams()[-1].get("id")) + 1)
 
-    return {"display_name": user_name,
-            "name": unic_user_name,
+    return {"display_name": team_name,
+            "name": unic_team_name,
             "id": new_team_id,
             "group_ids": ["3"]}
 
@@ -83,6 +83,7 @@ def make_user_data(user_name, user_id, team_id):
     """
 
     unic_user_name = user_name + "_" + user_id
+
     return {'username': unic_user_name,
             'name': user_name,
             'password': f"user_{user_id}",
@@ -101,8 +102,8 @@ def check_user_already_exist(user_id):
              False - пользователь не зарегистрирован
     """
 
-    for t in read_teams():
-        if user_id in t.get("name"):
+    for team in read_teams():
+        if user_id in team.get("name"):
             return True
 
 
@@ -112,14 +113,13 @@ def check_user_name(name):
     Args:
         name: ФИО пользователя
 
-    Returns: True - ФИО корректно, False - ФИО не корректно
+    Returns: True - ФИО корректно, False - ФИО некорректно
     """
 
     if len(name) > 60:
         return False
 
-    word_count = len(name.split())
-    if word_count != 3:
+    if len(name.split()) != 3:
         return False
 
     no_numbers = name.replace(" ", "").replace("-", "").isalpha()
@@ -166,11 +166,9 @@ async def reg_user(callback: types.CallbackQuery, state: FSMContext):
 
     usr_id = str(callback.from_user.id)
     already_exist = check_user_already_exist(usr_id)
+
     if already_exist:
-        sent_msg = await callback.message.edit_text("Вы уже зарегистрированы.",
-                                                    reply_markup=menu_keyboard)
-        global_Dict_del_msg[usr_id] = sent_msg.message_id
-        write_user_values("global_Dict_del_msg", global_Dict_del_msg)
+        await callback.message.edit_text("Вы уже зарегистрированы.",  reply_markup=menu_keyboard)
     else:
         await callback.message.edit_text("Отправьте ФИО в формате Иванов Иван Иванович.")
         await state.set_state(User.name)
@@ -182,12 +180,14 @@ async def get_user_name(message: types.Message, state: FSMContext):
     Функция для получения имени пользователя и занесения пользователя в БД
     """
 
-    name_is_correct = check_user_name(message.text)
+    user_message = message.text
+    name_is_correct = check_user_name(user_message)
+
     if not name_is_correct:
         await message.answer("ФИО введено в некорректном формате, повторите ввод.")
         return
 
-    name = make_name_capital_letters(message.text)
+    name = make_name_capital_letters(user_message)
     await state.update_data(name=name)
     data = await state.get_data()
     await state.clear()
