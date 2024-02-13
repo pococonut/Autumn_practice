@@ -113,7 +113,8 @@ docker start judgehost-0
 
 После правильной установки, вам будет доступен веб-интерфейс DOMjudge по адресу http://localhost:12345, для входа нужно будет указать имя и пароль пользователя admin.
 
-![веб-интерфейс DOMjudge](/home/polina/Downloads/снимок1.png)
+![веб-интерфейс DOMjudge](images/снимок1.png)
+
 
 
 
