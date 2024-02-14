@@ -160,6 +160,10 @@ cython_debug/
 config.py
 .idea
 test.py
+<<<<<<< HEAD
 test_DOMjudge.py
 test_GET_RESULT.py
 __init__.py
+=======
+user_values.json
+>>>>>>> development

@@ -1,8 +1,8 @@
-import requests
 import json
 import logging
-import requests.utils
 import base64
+import requests
+import requests.utils
 from config import admin_authorization, settings
 
 PLATFORM_URL = "http://localhost:12345"
@@ -36,7 +36,7 @@ def decode(base64_string):
         decoded_string = decoded_bytes.decode('utf-8')
         return decoded_string
     except Exception as e:
-        print("Error decoding Base64 string:", str(e))
+        logging.warning("Error decoding Base64 string:", str(e))
 
 
 def read_scoreboard():
@@ -46,7 +46,7 @@ def read_scoreboard():
     """
 
     try:
-        response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE)
+        response = requests.get(CONTESTS_SCOREBOARD_URL_TEMPLATE, timeout=15)
         if response.status_code == 200:
             result = response.json()
             return result
@@ -59,17 +59,51 @@ def read_scoreboard():
 def read_problem_text(p_id):
     """
     Функция для получения описания задачи
-    Args: Идентификатор задачи
-    Returns: Данные ответа
+    Args:
+        p_id: Идентификатор задачи
+
+    Returns: Текст задачи в виде pdf файла
     """
 
     try:
         url = PROBLEM_URL_TEXT.replace('PROBLEM_ID', p_id)
-        data = requests.get(url)
+        data = requests.get(url, timeout=15)
         return data if data else None
     except RuntimeError as e:
         logging.warning(e)
         return None
+
+
+def read_problems():
+    """
+    Функция для получения всех задач текущего соревнования
+    Returns: Задачи или None если возникла ошибка
+    """
+
+    try:
+        data = do_api_request(CONTEST_PROBLEMS_URL_TEMPLATE)
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
+
+    if not isinstance(data, list):
+        logging.warning("DOMjudge's API returned unexpected JSON data for endpoint 'problems'.")
+        return None
+
+    problems = []
+
+    for problem in data:
+        if ('id' not in problem
+                or 'label' not in problem
+                or not problem['id']
+                or not problem['label']):
+            logging.warning("DOMjudge's API returned unexpected JSON data for 'problems'.")
+            return None
+        problems.append(problem)
+
+    logging.info(f'Read {len(problems)} problem(s) from the API.')
+
+    return problems
 
 
 def read_teams():
@@ -85,6 +119,33 @@ def read_teams():
     except RuntimeError as e:
         logging.warning(e)
         return None
+
+
+def read_users():
+    """
+    Функция для получения всех пользователей
+    Returns: Пользователи или None если возникла ошибка
+    """
+
+    try:
+        data = do_api_request(USERS_URL_TEMPLATE)
+    except RuntimeError as e:
+        logging.warning(e)
+        return None
+
+    if not isinstance(data, list):
+        logging.warning("DOMjudge's API returned unexpected JSON data for endpoint 'contests'.")
+        return None
+
+    users = []
+    for user in data:
+        if not user['id']:
+            logging.warning("DOMjudge's API returned unexpected JSON data for 'contests'.")
+            return None
+        users.append(user)
+
+    logging.info(f'Read {len(users)} contest(s) from the API.')
+    return users
 
 
 def read_submissions():
@@ -119,32 +180,6 @@ def read_submission_source_code(submission_id):
     except RuntimeError as e:
         logging.warning(e)
         return None
-
-
-def read_users():
-    """
-    Функция для получения всех пользователей
-    Returns: Пользователи или None если возникла ошибка
-    """
-    try:
-        data = do_api_request(USERS_URL_TEMPLATE)
-    except RuntimeError as e:
-        logging.warning(e)
-        return None
-
-    if not isinstance(data, list):
-        logging.warning("DOMjudge's API returned unexpected JSON data for endpoint 'contests'.")
-        return None
-
-    users = []
-    for user in data:
-        if not user['id']:
-            logging.warning("DOMjudge's API returned unexpected JSON data for 'contests'.")
-            return None
-        users.append(user)
-
-    logging.info(f'Read {len(users)} contest(s) from the API.')
-    return users
 
 
 def read_contests():
@@ -209,44 +244,13 @@ def read_languages():
             'entry_point_required': item['entry_point_required'] or False,
             'extensions': {item['id']}
         }
+
         language['extensions'] |= set([ext for ext in item['extensions']])
         languages.append(language)
 
     logging.info(f'Read {len(languages)} language(s) from the API.')
 
     return languages
-
-
-def read_problems():
-    """
-    Функция для получения всех задач текущего соревнования
-    Returns: Задачи или None если возникла ошибка
-    """
-
-    try:
-        data = do_api_request(CONTEST_PROBLEMS_URL_TEMPLATE)
-    except RuntimeError as e:
-        logging.warning(e)
-        return None
-
-    if not isinstance(data, list):
-        logging.warning("DOMjudge's API returned unexpected JSON data for endpoint 'problems'.")
-        return None
-
-    problems = []
-
-    for problem in data:
-        if ('id' not in problem
-                or 'label' not in problem
-                or not problem['id']
-                or not problem['label']):
-            logging.warning("DOMjudge's API returned unexpected JSON data for 'problems'.")
-            return None
-        problems.append(problem)
-
-    logging.info(f'Read {len(problems)} problem(s) from the API.')
-
-    return problems
 
 
 def get_submission_judgement(submission_id):
@@ -284,14 +288,57 @@ def get_submission_verdict(submission_id):
         return None
 
 
+def send_user(session, new_user_data):
+    """
+    Функция для добавления пользователя в БД
+    Args:
+        session: Сессия
+        new_user_data: Информация о пользователе
+
+    Returns: True - пользователь был добавлен, False в противном случае
+    """
+
+    try:
+        response_user = session.post(USERS_URL_TEMPLATE, json=new_user_data)
+        if response_user.status_code != 201:
+            return False
+        return True
+    except RuntimeError as e:
+        logging.warning(e)
+        return False
+
+
+def send_team(session, new_team_data):
+    """
+    Функция для добавления команды в БД
+    Args:
+        session: Сессия
+        new_team_data: Информация о команде
+
+    Returns: True - команда была добавлена, False в противном случае
+    """
+
+    try:
+        # Отправка POST-запроса для добавления новой команды
+        response_team = session.post(CONTESTS_TEAMS_URL_TEMPLATE, json=new_team_data)
+        # Проверка статуса ответа
+        if response_team.status_code != 201:
+            return False
+        return True
+    except RuntimeError as e:
+        logging.warning(e)
+        return False
+
+
 def do_api_request(url: str):
     """
     Выполняет вызов API для данного запроса и возвращает его данные
     Args:
-        url:
+        url: Адрес платформы
 
     Returns: Содержимое запроса
     """
+
     session = admin_authorization(settings.admin_username, settings.admin_password)
 
     if not PLATFORM_URL:
@@ -302,13 +349,13 @@ def do_api_request(url: str):
     try:
         response = session.get(url)
     except requests.exceptions.RequestException as e:
-        raise RuntimeError(e)
+        raise RuntimeError(e) from e
 
     if response.status_code >= 300:
         if response.status_code == 401:
-            raise RuntimeError('Authentication failed, please check your DOMjudge credentials in ~/.netrc.')
-        else:
-            raise RuntimeError(f'API request {url} failed (code {response.status_code}).')
+            raise RuntimeError('Authentication failed, please check '
+                               'your DOMjudge credentials in ~/.netrc.')
+        raise RuntimeError(f'API request {url} failed (code {response.status_code}).')
 
     logging.debug(f"API call '{url}' returned:\n{response.text}")
 
@@ -338,16 +385,17 @@ def do_api_submit(problem_id, lang_id, headers, filenames):
 
     logging.info(f'connecting to {CONTEST_SUBMISSIONS_URL_TEMPLATE}')
 
-    response = requests.post(CONTEST_SUBMISSIONS_URL_TEMPLATE, data=data, files=files, headers=headers)
+    response = requests.post(CONTEST_SUBMISSIONS_URL_TEMPLATE,
+                             data=data, files=files, headers=headers, timeout=15)
 
     logging.debug(f"API call 'submissions' returned:\n{response.text}")
 
     # Соединение сработало, но, возможно, мы получили сообщение об ошибке HTTP
     if response.status_code >= 300:
         if response.status_code == 401:
-            raise RuntimeError('Authentication failed, please check your DOMjudge credentials in ~/.netrc.')
-        else:
-            raise RuntimeError(f'Submission failed (code {response.status_code})')
+            raise RuntimeError('Authentication failed, please check '
+                               'your DOMjudge credentials in ~/.netrc.')
+        raise RuntimeError(f'Submission failed (code {response.status_code})')
 
     # Мы получили успешный HTTP-ответ.
     # Но проверим, действительно ли мы получили идентификатор отправки.
@@ -359,7 +407,8 @@ def do_api_submit(problem_id, lang_id, headers, filenames):
         err = f"Ошибка: {error_text}"
         return False, err
 
-    if not isinstance(submission, dict) or not 'id' in submission or not isinstance(submission['id'], str):
+    if (not isinstance(submission, dict) or not 'id' in submission
+            or not isinstance(submission['id'], str)):
         error_text = "DOMjudge\'s API returned unexpected JSON data."
         logging.error(error_text)
         err = f"Ошибка: {error_text}"

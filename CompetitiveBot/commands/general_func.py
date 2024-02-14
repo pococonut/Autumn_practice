@@ -1,50 +1,105 @@
+import json
+import os
+import logging
 import fitz
 from commands.url_requests import read_problem_text
 
 
-def get_page(u_id, global_dict_move, lst):
+def read_user_values(dict_name):
+    """
+    Функция для чтения переменных пользователя, используемых при взаимодействии с ботом
+    Args:
+        dict_name: Название словаря с переменными
+
+    Returns: Словарь с переменными
+    """
+
+    filename = "user_values.json"
+    try:
+        if not os.path.exists(filename):
+            with open(filename, 'w', encoding='UTF-8') as f:
+                json.dump({}, f)
+
+        with open(filename, 'r', encoding='UTF-8') as file:
+            data = json.load(file)
+            g_dict = data.get(f'{dict_name}', {})
+            return g_dict
+
+    except FileNotFoundError:
+        logging.warning(f"File {filename} not found.")
+        return {}
+    except json.JSONDecodeError:
+        logging.warning(f"Error decoding JSON from file {filename}.")
+        return {}
+
+
+def write_user_values(dict_name, g_dict):
+    """
+    Функция для записи переменных пользователя, используемых при взаимодействии с ботом
+    Args:
+        dict_name: Название словаря с переменными
+        g_dict: Словарь с переменными
+
+    Returns: None
+    """
+
+    filename = "user_values.json"
+    try:
+        with open(filename, 'r', encoding='UTF-8') as file:
+            data = json.load(file)
+            data[f'{dict_name}'] = g_dict
+
+        with open(filename, 'w', encoding='UTF-8') as file:
+            json.dump(data, file)
+    except Exception as e:
+        logging.exception(e)
+
+
+def get_page(user_id, global_dict_move, tasks_lst):
     """
     Функция возвращающая номер просматриваемой задачи из общего количества задач
     Args:
-        u_id: Идентификатор пользователя
+        user_id: Идентификатор пользователя в телеграм
         global_dict_move: Словарь с номером текущей страницей задачи
-        lst: Список задач
+        tasks_lst: Список задач
 
     Returns: номер просматриваемой задачи
     """
 
-    p = global_dict_move[u_id]
-    if global_dict_move[u_id] <= -1:
-        p = len(lst) + global_dict_move[u_id]
+    page = global_dict_move[user_id]
+    if global_dict_move[user_id] <= -1:
+        page = len(tasks_lst) + global_dict_move[user_id]
 
-    return p
+    return page
 
 
-def get_lvl_task(el):
+def get_lvl_task(task):
     """
-    Возвращает уровень задачи
+    Функция возвращает уровень задачи
     Args:
-        el: Задача
+        task: Задача
     Returns: Уровень
     """
 
-    levels = {"A": "Легкий", "B": "Средний", "C": "Сложный"}
-    level = el.get('label')
+    possible_levels = {"A": "Легкий", "B": "Средний", "C": "Сложный"}
+    current_task_level = task.get('label')
 
-    for k, v in levels.items():
-        if k in el.get('label'):
-            return v
+    for label, value in possible_levels.items():
+        if label in task.get('label'):
+            return value
 
-    return level
+    return current_task_level
 
 
 def navigation(direction, page, count):
     """
-    Функция для навигации по списку объектов.
-    :param direction: Направление (Вперед, Назад).
-    :param page: Текущая номер объекта.
-    :param count: Количество объектов.
-    :return: Строка, Номер объекта.
+    Функция для навигации по списку объектов
+    Args:
+        direction: Направление (Вперед, Назад)
+        page: Номер объекта из всего списка
+        count: Количество объектов
+
+    Returns: Строка с номером объекта из общего количества, Номер объекта
     """
 
     s = ''
@@ -69,46 +124,70 @@ def navigation(direction, page, count):
     return s, page
 
 
+def get_text_task_description(task_data):
+    """
+    Функция переводит описание задачи из pdf в текст
+    Args:
+        task_data: Описание задачи
+
+    Returns: Описание задачи в текстовом формате
+    """
+
+    problem_text_pdf = fitz.open("pdf", task_data)
+    text = ""
+    # Извлечение текста из каждой страницы PDF и добавление его к переменной text
+    for page_number in range(problem_text_pdf.page_count):
+        page = problem_text_pdf.load_page(page_number)
+        text += page.get_text("text")
+    return text
+
+
+def add_style_text(text):
+    """
+    Функция для выделения дополнительных параметров задачи
+    Args:
+        text: Описание задачи в текстовом формате
+
+    Returns: Описание задачи
+    """
+
+    other_params = {"Формат входных данных": "\n\n<b><em>Формат входных данных:</em></b>",
+                    "Формат выходных данных": "\n\n<b><em>Формат выходных данных:</em></b>",
+                    "Примечание": "\n\n<b><em>Примечание</em></b>",
+                    "Пример входных данных": "\n\n<b><em>Пример входных данных</em></b>",
+                    "Пример выходных данных": "\n\n<b><em>Пример выходных данных</em></b>"}
+
+    text = text.replace('\n', ' ')
+    for param, style_param in other_params.items():
+        if param in text:
+            text = text.replace(param, style_param)
+    return text.replace(": ", ":\n")
+
+
 def print_task(problem, more=0):
     """
     Функция печати данных задачи.
     Args:
-        more: Параметр для краткого - 0, подробного - 1 показа задачи
+        more: Параметр для краткого показа задачи - 0,
+              подробного показа задачи - 1
         problem: Словарь с параметрами задачи
 
     Returns: Строка с информацией о задаче
     """
 
-    s = (f"<b><em>Название:</em></b> {problem.get('name')}\n"
-         f"<b><em>Уровень:</em></b> {get_lvl_task(problem)}\n"
-         f"<b><em>Ограничение по времени:</em></b> {problem.get('time_limit')} сек.\n")
-
-    style_msg = {"Формат входных данных": "\n\n<b><em>Формат входных данных:</em></b>",
-                 "Формат выходных данных": "\n\n<b><em>Формат выходных данных:</em></b>",
-                 "Примечание": "\n\n<b><em>Примечание</em></b>",
-                 "Пример входных данных": "\n\n<b><em>Пример входных данных</em></b>",
-                 "Пример выходных данных": "\n\n<b><em>Пример выходных данных</em></b>"
-                 }
+    task_description = (f"<b><em>Название:</em></b> {problem.get('name')}\n"
+                        f"<b><em>Уровень:</em></b> {get_lvl_task(problem)}\n"
+                        f"<b><em>Ограничение по времени:</em></b> "
+                        f"{problem.get('time_limit')} сек.\n")
 
     response = read_problem_text(problem.get("id"))
 
     if response.status_code == 200:
-        pdf_document = fitz.open("pdf", response.content)
-        text = ""
-        # Извлечение текста из каждой страницы PDF и добавление его к переменной text
-        for page_number in range(pdf_document.page_count):
-            page = pdf_document.load_page(page_number)
-            text += page.get_text("text")
-
+        text = get_text_task_description(response.content)
         if not more:
             text = text.split("Формат входных данных")[0]
 
-        text = text.replace('\n', ' ')
-        for k, v in style_msg.items():
-            if k in text:
-                text = text.replace(k, v)
-        text = text.replace(": ", ":\n")
+        style_text_text = add_style_text(text)
+        task_description += f"<b><em>Описание:</em></b>\n\n{style_text_text}"
 
-        s += f"<b><em>Описание:</em></b>\n\n{text}"
-
-    return s
+    return task_description
