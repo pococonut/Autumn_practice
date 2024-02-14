@@ -20,8 +20,6 @@ click==8.1.7
 compressed-rtf==1.0.6
 configobj==5.0.8
 configparser==6.0.0
-<<<<<<< HEAD
-=======
 cryptography==42.0.2
 dill==0.3.8
 distro==1.9.0
@@ -29,16 +27,11 @@ docker==7.0.0
 docker-compose==1.29.2
 dockerpty==0.4.1
 docopt==0.6.2
->>>>>>> development
 docx2txt==0.8
 ebcdic==1.1.1
 etelemetry==0.3.1
 extract-msg==0.28.7
 filelock==3.13.1
-<<<<<<< HEAD
-fitz==0.0.1.dev2
-=======
->>>>>>> development
 frozenlist==1.4.0
 greenlet==3.0.1
 httplib2==0.22.0
@@ -46,11 +39,8 @@ idna==3.4
 IMAPClient==2.1.0
 importlib-resources==6.1.1
 isodate==0.6.1
-<<<<<<< HEAD
-=======
 isort==5.13.2
 jsonschema==3.2.0
->>>>>>> development
 looseversion==1.3.0
 lxml==4.9.3
 magic-filter==1.0.12
@@ -63,24 +53,6 @@ numpy==1.24.4
 olefile==0.46
 packaging==23.2
 pandas==2.0.3
-<<<<<<< HEAD
-pathlib==1.0.1
-pdfminer.six==20191110
-Pillow==9.5.0
-prov==2.0.0
-pycryptodome==3.19.0
-pydantic==2.5.3
-pydantic_core==2.14.6
-pydot==2.0.0
-PyMuPDF==1.23.19
-PyMuPDFb==1.23.9
-pyparsing==3.1.1
-python-dateutil==2.8.2
-python-dotenv==1.0.0
-python-pptx==0.6.22
-pytz==2023.3.post1
-pyxnat==1.6.2
-=======
 paramiko==3.4.0
 pathlib==1.0.1
 pdfminer.six==20191110
@@ -105,7 +77,6 @@ python-pptx==0.6.22
 pytz==2023.3.post1
 pyxnat==1.6.2
 PyYAML==5.4.1
->>>>>>> development
 rdflib==7.0.0
 requests==2.31.0
 scipy==1.10.1
@@ -117,12 +88,9 @@ SpeechRecognition==3.8.1
 SQLAlchemy==2.0.22
 tabulate==0.9.0
 textract==1.6.5
-<<<<<<< HEAD
-=======
 texttable==1.7.0
 tomli==2.0.1
 tomlkit==0.12.3
->>>>>>> development
 traits==6.3.2
 typing_extensions==4.8.0
 tzdata==2023.4
