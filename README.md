@@ -62,11 +62,10 @@ git clone https://github.com/pococonut/CompetitiveBot.git
 ```
 
 6. Создание виртуального окружения.
-\
-В среде PyCharm:
 
 ```
-Settings -> Project: CompetitiveBot -> Python Interpreter -> Python 3.x
+python -m venv venv
+source venv/bin/activate
 ```
 
 7. Установка необходимых библиотек.
@@ -215,3 +214,4 @@ p1_C - Сложная задача
 ```
 python3 main.py
 ```
+
