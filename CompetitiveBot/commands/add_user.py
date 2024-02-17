@@ -63,7 +63,11 @@ def make_team_data(team_name, user_id):
     """
 
     unic_team_name = team_name + "_" + user_id
-    new_team_id = str(int(read_teams()[-1].get("id")) + 1)
+
+    if not read_teams():
+        new_team_id = "3"
+    else:
+        new_team_id = str(int(read_teams()[-1].get("id")) + 1)
 
     return {"display_name": team_name,
             "name": unic_team_name,
@@ -102,9 +106,12 @@ def check_user_already_exist(user_id):
              False - пользователь не зарегистрирован
     """
 
-    for team in read_teams():
-        if user_id in team.get("name"):
-            return True
+    try:
+        for team in read_teams():
+            if user_id in team.get("name"):
+                return True
+    except:
+        return False
 
 
 def check_user_name(name):
