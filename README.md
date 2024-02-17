@@ -84,12 +84,16 @@ pip install -r requirements.txt
 ```
 import requests
 from pydantic.v1 import BaseSettings
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
-    api: str = "TOKEN"
-    admin_username = "admin" # Данное поле можно оставить без изменений, если вы не указывали другого имени для пользователя admin
-    admin_password = "ADMIN_PASSWORD"
+    api: str = os.getenv("API")
+    admin_username = os.getenv("ADMIN_USERNAME")
+    admin_password = os.getenv("ADMIN_PASSWORD")
 
 
 settings = Settings()
@@ -214,4 +218,3 @@ p1_C - Сложная задача
 ```
 python3 main.py
 ```
-
