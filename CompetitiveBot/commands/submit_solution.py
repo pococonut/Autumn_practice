@@ -10,7 +10,7 @@ from commands.general_func import print_task, read_user_values, write_user_value
 from commands.get_tasks import globalDict_task
 from commands.menu import global_Dict_del_msg
 from commands.url_requests import do_api_submit, read_users, read_problems
-from keyboards import languages_ikb, back_ikb, check_result_ikb, menu_keyboard
+from keyboards import languages_ikb, back_ikb, check_result_ikb, menu_keyboard, menu_ikb
 
 globalDict_solutions = read_user_values("globalDict_solutions")
 globalDict_prev_msg = read_user_values("globalDict_prev_msg")
@@ -128,7 +128,9 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
     if callback.data == "back":
         await state.clear()
         await callback.message.edit_reply_markup()
-        await callback.message.edit_text('Действие отменено.')
+        sent_msg = await callback.message.edit_text('Действие отменено.', reply_markup=menu_ikb)
+        global_Dict_del_msg[str(callback.from_user.id)] = sent_msg.message_id
+        write_user_values("global_Dict_del_msg", global_Dict_del_msg)
     else:
         languages_id = {"lang_C": ["c", "c"],
                         "lang_C++": ["cpp", "cpp"],

@@ -2,27 +2,21 @@ version: '3'
 
 services:
   competitive_bot:
+    container_name: competitive_bot
+    restart: always
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
       .env
-    environment:
-      API: ${API}
-      ADMIN_USERNAME: ${ADMIN_USERNAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-    depends_on:
-      - dj-mariadb
-      - dj-domserver
 
   dj-mariadb:
+    container_name: cb-mariadb
     image: docker.io/mariadb
+    restart: always
     hostname: mariadb
-    environment:
-      - MYSQL_ROOT_PASSWORD=domjudge
-      - MYSQL_USER=domjudge
-      - MYSQL_PASSWORD=djpw
-      - MYSQL_DATABASE=domjudge
+    env_file:
+      .env
     ports:
       - 13306:3306
     command: --max-connections=1000 --max-allowed-packet=512M
@@ -30,27 +24,26 @@ services:
       - /var/lib/mysql
 
   dj-domserver:
+    container_name: cb-domserver
     image: docker.io/domjudge/domserver
+    restart: always
     hostname: domserver
-    environment:
-      - MYSQL_ROOT_PASSWORD=domjudge
-      - MYSQL_USER=domjudge
-      - MYSQL_PASSWORD=djpw
-      - MYSQL_DATABASE=domjudge
-      - MYSQL_HOST=mariadb
+    env_file:
+      .env
     ports:
       - 12345:80
     links:
       - dj-mariadb:mariadb
 
-#  dj-judgehost:
-#    image: domjudge/judgehost
-#    privileged: true
-#    hostname: judgedaemon-0
-#    volumes:
-#      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-#    environment:
-#      - DAEMON_ID=0
-#      - JUDGEDAEMON_PASSWORD=domjudge
-#    links:
-#      - dj-domserver:domserver
+  dj-judgehost:
+    container_name: cb-judgehost
+    image: domjudge/judgehost
+    restart: always
+    privileged: true
+    hostname: judgedaemon
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    env_file:
+      .env
+    links:
+      - dj-domserver:dj-domserver

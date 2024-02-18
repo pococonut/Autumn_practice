@@ -1,3 +1,4 @@
+import logging
 from aiogram import types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -47,6 +48,7 @@ def get_user_team_id(user_id):
 
     Returns: Идентификатор команды, если он был найден, иначе None
     """
+
     for team in read_teams():
         if user_id == get_uid_from_team_name(team):
             return team.get("id")
@@ -110,7 +112,8 @@ def check_user_already_exist(user_id):
         for team in read_teams():
             if user_id in team.get("name"):
                 return True
-    except:
+    except Exception as e:
+        logging.warning(e)
         return False
 
 

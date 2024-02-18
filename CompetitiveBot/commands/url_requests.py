@@ -5,7 +5,7 @@ import requests
 import requests.utils
 from config import admin_authorization, settings
 
-PLATFORM_URL = "http://localhost:12345"
+PLATFORM_URL = "http://dj-domserver:80"
 API_VERSION = "v4"
 CONTEST_ID = "2"
 
