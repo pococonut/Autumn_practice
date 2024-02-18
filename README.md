@@ -14,108 +14,81 @@ CompetitiveBot объединяет в себе интерфейс в виде �
 
 ### Установка необходимых контейнеров и исходного кода проекта.
 
-При установке используются образы docker и код проекта из github.
-
 1. Установка docker.
 \
 Руководство по установке docker вы можете найти на [странице официальной документации](https://docs.docker.com/engine/install/ubuntu/).
 
-2. Установка контейнера базы данных.
-\
-MariaDB container:
-
-```
-sudo docker run -it --name dj-mariadb -e MYSQL_ROOT_PASSWORD=rootpw -e MYSQL_USER=domjudge -e MYSQL_PASSWORD=djpw -e MYSQL_DATABASE=domjudge -p 13306:3306 mariadb --max-connections=1000
-```
-
-3. Установка контейнера сервера.
-\
-DOMserver container:
-
-```
-docker run --link dj-mariadb:mariadb -it -e MYSQL_HOST=mariadb -e MYSQL_USER=domjudge -e MYSQL_DATABASE=domjudge -e MYSQL_PASSWORD=djpw -e MYSQL_ROOT_PASSWORD=rootpw -p 12345:80 --name domserver domjudge/domserver:latest
-```
-
-После установки DOMserver, в консоль будут выведены пароли для пользователей admin и judgehost, их необходимо сохранить, будьте внимательны.
-
-Так же их можно будет найти используя:
-
-```
-docker exec -it domserver cat /opt/domjudge/domserver/etc/initial_admin_password.secret
-docker exec -it domserver cat /opt/domjudge/domserver/etc/restapi.secret
-```
-
-4. Установка контейнера судьи.
-\
-В ключе JUDGEDAEMON_PASSWORD необходимо будет указать пароль judgehost.
-
-Judgehost container:
-
-```
-sudo docker run -itd --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro --name judgehost-0 --link domserver:domserver --hostname judgedaemon-0 -e DAEMON_ID=0 -e CONTAINER_TIMEZONE=Asia/Shanghai -e JUDGEDAEMON_PASSWORD= domjudge/judgehost:8.2.1
-```
-
-5. Клонирование проекта CompetitiveBot из репозитория.
+2. Клонирование проекта CompetitiveBot из репозитория.
 
 ```
 git clone https://github.com/pococonut/CompetitiveBot.git
 ```
 
-6. Создание виртуального окружения.
-
-```
-python -m venv venv
-source venv/bin/activate
-```
-
-7. Установка необходимых библиотек.
+3. Создание файла .env 
 \
-Откройте консоль в корневой папке проекта и выполните команду:
-```
-pip install -r requirements.txt
-```
-
-8. Создание файла config.py 
+Для правильной работы программы и ее взаимодействия с другими сервисами, необходимо в корневой папке проекта создать файл .env и указать в нем конфигурационные данные для приложения. 
 \
-Для правильной работы программы и ее взаимодействия с другими сервисами, необходимо в корневой папке проекта в файле config.py указать конфигурационные данные для приложения.
+\
+Такие параметры как ADMIN_PASSWORD для пользователя admin и JUDGEDAEMON_PASSWORD для пользователя judgehost будут доступны после сборки контейнера domserver, на этом шаге оставьте их пустыми.
 
-Пример файла config.py:
-
-```
-import requests
-from pydantic.v1 import BaseSettings
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-
-class Settings(BaseSettings):
-    api: str = os.getenv("API")
-    admin_username = os.getenv("ADMIN_USERNAME")
-    admin_password = os.getenv("ADMIN_PASSWORD")
-
-
-settings = Settings()
-
-
-def admin_authorization(uname, passw):
-    session = requests.Session()
-    session.auth = (uname, passw)
-    return session
-```
-
-9. Запуск контейнеров.
+Пример файла .env:
 
 ```
-docker start dj-mariadb
-docker start domserver
-docker start judgehost-0
+API=
+
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=
+
+DAEMON_ID=0
+JUDGEDAEMON_PASSWORD=
+
+MYSQL_ROOT_PASSWORD=domjudge
+MYSQL_USER=domjudge
+MYSQL_PASSWORD=djpw
+MYSQL_DATABASE=domjudge
+
+MYSQL_ROOT_PASSWORD=domjudge
+MYSQL_USER=domjudge
+MYSQL_PASSWORD=djpw
+MYSQL_DATABASE=domjudge
+MYSQL_HOST=mariadb
 ```
 
+4. Запуск контейнеров dj-mariadb и dj-domserver.
+\
+В корневой папке проекта выполните команды:
+
+```
+docker-compose up -d dj-mariadb
+docker-compose up dj-domserver
+```
+
+В консоль будут выведены пароли для пользователей admin и judgehost в формате:
+
+```
+cb-domserver       | Initial admin password is ...
+cb-domserver       | 
+cb-domserver       | Initial judgehost password is ...
+```
+
+Пароли необходимо сохранить, будьте внимательны.
+
+5. Установка паролей.
+\
+Перейдите в файл .env и установите пароли для ADMIN_PASSWORD и JUDGEDAEMON_PASSWORD, которые были получены на предыдущем шаге.
+
+6. Запуск контейнеров.
+\
+Далее выполните команду:
+
+```
+docker-compose up
+```
+\
 После правильной установки, вам будет доступен веб-интерфейс DOMjudge по адресу http://localhost:12345.
 \
-Для входа нужно будет указать имя и пароль пользователя admin.
+\
+Для входа будет необходимо указать имя и пароль пользователя admin.
 
 ![веб-интерфейс DOMjudge](images/снимок1.png)
 
@@ -171,7 +144,7 @@ p_1_out_2.txt - вторые выходные тестовые данные дл
 
 ![details/ edit](images/снимок4.png)
 
-Добавте тестовые данные в формате txt
+Добавьте тестовые данные в формате txt
 
 ![txt](images/снимок5.png)
 
@@ -213,8 +186,6 @@ p1_C - Сложная задача
 
 ### Запуск телеграм бота
 
-После правильной установки и настройки, сервис будет готов к использованию. Перейдите в корневую папку проекта и запустите приложение.
+После правильной установки и настройки, сервис будет готов к использованию.
 
-```
-python3 main.py
-```
+
