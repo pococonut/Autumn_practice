@@ -124,24 +124,25 @@ async def user_info(callback: types.CallbackQuery):
     scoreboard = read_scoreboard()
     if not scoreboard:
         await callback.message.edit_text(f'Ошибка при отправке запроса.', reply_markup=menu_ikb)
-    else:
-        usr_id = str(callback.from_user.id)
-        team_info = get_team_info(usr_id)
-        rating_usr_info = get_usr_rating_info(team_info, scoreboard)
-        solved_problems = [p for p in rating_usr_info.get("problems") if p.get("solved")]
-        best_ranks = {"1": "🥇", "2": "🥈", "3": "🥉"}
+        return
 
-        user_name = team_info.get('display_name')
-        rank = str(rating_usr_info.get('rank'))
-        rank_emoji = best_ranks.get(rank) if int(rank) <= 3 else ''
-        score = rating_usr_info.get('score').get('num_solved')
+    usr_id = str(callback.from_user.id)
+    team_info = get_team_info(usr_id)
+    rating_usr_info = get_usr_rating_info(team_info, scoreboard)
+    solved_problems = [p for p in rating_usr_info.get("problems") if p.get("solved")]
+    best_ranks = {"1": "🥇", "2": "🥈", "3": "🥉"}
 
-        message_info = (f"<b><em>{user_name}</em></b>\n\n"
-                        f"<em>Рейтинг</em>: {rank} место {rank_emoji}\n"
-                        f"<em>Счёт</em>: {score}\n"
-                        f"<em>Решённые задачи</em>: {len(solved_problems)}\n\n")
+    user_name = team_info.get('display_name')
+    rank = str(rating_usr_info.get('rank'))
+    rank_emoji = best_ranks.get(rank) if int(rank) <= 3 else ''
+    score = rating_usr_info.get('score').get('num_solved')
 
-        await callback.message.edit_text(message_info, reply_markup=user_info_ikb)
+    message_info = (f"<b><em>{user_name}</em></b>\n\n"
+                    f"<em>Рейтинг</em>: {rank} место {rank_emoji}\n"
+                    f"<em>Счёт</em>: {score}\n"
+                    f"<em>Решённые задачи</em>: {len(solved_problems)}\n\n")
+
+    await callback.message.edit_text(message_info, reply_markup=user_info_ikb)
 
 
 @dp.callback_query(F.data == 'solved_tasks')
@@ -158,23 +159,23 @@ async def show_solved_tasks(callback: types.CallbackQuery):
         message = tasks_request_result[0]
         keyboard = tasks_request_result[1]
         await callback.message.edit_text(message, reply_markup=keyboard)
+        return
+
+    if usr_id not in globalDict_solved:
+        globalDict_solved[usr_id] = solved_tasks[0].get('id')
+        write_user_values("globalDict_solved", globalDict_solved)
     else:
+        globalDict_solved[usr_id] = solved_tasks[globalDict_move_solved[usr_id]].get('id')
+        write_user_values("globalDict_solved", globalDict_solved)
 
-        if usr_id not in globalDict_solved:
-            globalDict_solved[usr_id] = solved_tasks[0].get('id')
-            write_user_values("globalDict_solved", globalDict_solved)
-        else:
-            globalDict_solved[usr_id] = solved_tasks[globalDict_move_solved[usr_id]].get('id')
-            write_user_values("globalDict_solved", globalDict_solved)
+    page = get_page(usr_id, globalDict_move_solved, solved_tasks)
+    page_of_all = f"<b>№</b> {page + 1}/{len(solved_tasks)}\n\n"
+    curr_problem = solved_tasks[globalDict_move_solved[usr_id]]
+    first_solution = first_or_not(curr_problem)
+    message = page_of_all + print_task(curr_problem) + first_solution
 
-        page = get_page(usr_id, globalDict_move_solved, solved_tasks)
-        page_of_all = f"<b>№</b> {page + 1}/{len(solved_tasks)}\n\n"
-        curr_problem = solved_tasks[globalDict_move_solved[usr_id]]
-        first_solution = first_or_not(curr_problem)
-        message = page_of_all + print_task(curr_problem) + first_solution
-
-        await callback.message.edit_text(message, reply_markup=solved_tasks_nav,
-                                         disable_web_page_preview=True)
+    await callback.message.edit_text(message, reply_markup=solved_tasks_nav,
+                                     disable_web_page_preview=True)
 
 
 @dp.callback_query(F.data.in_({'left_s', 'right_s'}))
@@ -191,21 +192,22 @@ async def show_solved_tasks_lr(callback: types.CallbackQuery):
         message = tasks_request_result[0]
         keyboard = tasks_request_result[1]
         await callback.message.edit_text(message, reply_markup=keyboard)
-    else:
-        page = globalDict_move_solved[usr_id]
-        number_tasks = len(solved_tasks)
+        return
 
-        page_of_all, globalDict_move_solved[usr_id] = navigation(callback.data, page, number_tasks)
-        write_user_values("globalDict_move_solved", globalDict_move_solved)
+    page = globalDict_move_solved[usr_id]
+    number_tasks = len(solved_tasks)
 
-        curr_problem = solved_tasks[globalDict_move_solved[usr_id]]
-        first_solution = first_or_not(curr_problem)
-        globalDict_solved[usr_id] = curr_problem.get('id')
-        write_user_values("globalDict_solved", globalDict_solved)
-        message = page_of_all + print_task(curr_problem) + first_solution
+    page_of_all, globalDict_move_solved[usr_id] = navigation(callback.data, page, number_tasks)
+    write_user_values("globalDict_move_solved", globalDict_move_solved)
 
-        await callback.message.edit_text(message, reply_markup=solved_tasks_nav,
-                                         disable_web_page_preview=True)
+    curr_problem = solved_tasks[globalDict_move_solved[usr_id]]
+    first_solution = first_or_not(curr_problem)
+    globalDict_solved[usr_id] = curr_problem.get('id')
+    write_user_values("globalDict_solved", globalDict_solved)
+    message = page_of_all + print_task(curr_problem) + first_solution
+
+    await callback.message.edit_text(message, reply_markup=solved_tasks_nav,
+                                     disable_web_page_preview=True)
 
 
 @dp.callback_query(F.data == "code_source")

@@ -27,5 +27,6 @@ async def languages(callback: types.CallbackQuery):
         available_langs = get_list_available_langs(langs)
         text = f'Решения принимаются на языках:\n\n▫️ {available_langs}'
         await callback.message.edit_text(text, reply_markup=menu_ikb)
-    else:
-        await callback.message.edit_text('Ошибка при отправке запроса', reply_markup=menu_ikb)
+        return
+
+    await callback.message.edit_text('Ошибка при отправке запроса', reply_markup=menu_ikb)

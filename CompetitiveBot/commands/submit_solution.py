@@ -111,12 +111,13 @@ async def choose_lang_file(callback: types.CallbackQuery, state: FSMContext):
     if not tasks:
         await callback.message.edit_text("Ошибка сервера.")
         await callback.answer()
-    else:
-        usr_id = str(callback.from_user.id)
-        problem = get_curr_task_submission(tasks, usr_id)
-        text = print_task(problem).split("<b><em>Описание:</em></b>")[0] + "\nВыберите язык."
-        await callback.message.edit_text(text, reply_markup=languages_ikb)
-        await state.set_state(File.lang)
+        return
+
+    usr_id = str(callback.from_user.id)
+    problem = get_curr_task_submission(tasks, usr_id)
+    text = print_task(problem).split("<b><em>Описание:</em></b>")[0] + "\nВыберите язык."
+    await callback.message.edit_text(text, reply_markup=languages_ikb)
+    await state.set_state(File.lang)
 
 
 @dp.callback_query(File.lang)
@@ -131,16 +132,17 @@ async def get_lang_file(callback: types.CallbackQuery, state: FSMContext):
         sent_msg = await callback.message.edit_text('Действие отменено.', reply_markup=menu_ikb)
         global_Dict_del_msg[str(callback.from_user.id)] = sent_msg.message_id
         write_user_values("global_Dict_del_msg", global_Dict_del_msg)
-    else:
-        languages_id = {"lang_C": ["c", "c"],
-                        "lang_C++": ["cpp", "cpp"],
-                        "lang_Java": ["java", "java"],
-                        "lang_Python": ["python3", "py"]}
+        return
 
-        await state.update_data(lang=languages_id[callback.data])
-        await callback.message.edit_text("Отправьте файл с решением.", reply_markup=back_ikb)
-        globalDict_prev_msg[callback.from_user.id] = callback.message.message_id
-        write_user_values("globalDict_prev_msg", globalDict_prev_msg)
+    languages_id = {"lang_C": ["c", "c"],
+                    "lang_C++": ["cpp", "cpp"],
+                    "lang_Java": ["java", "java"],
+                    "lang_Python": ["python3", "py"]}
+
+    await state.update_data(lang=languages_id[callback.data])
+    await callback.message.edit_text("Отправьте файл с решением.", reply_markup=back_ikb)
+    globalDict_prev_msg[callback.from_user.id] = callback.message.message_id
+    write_user_values("globalDict_prev_msg", globalDict_prev_msg)
 
 
 @dp.message(F.content_type == types.ContentType.DOCUMENT)

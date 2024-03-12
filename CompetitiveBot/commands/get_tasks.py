@@ -109,24 +109,24 @@ async def show_tasks(callback: types.CallbackQuery):
         keyboard = tasks_request_result[1]
         await callback.message.edit_text(message, reply_markup=keyboard)
         await callback.answer()
+        return
+
+    globalDict_level[usr_id] = callback.data
+    write_user_values("globalDict_level", globalDict_level)
+
+    if usr_id not in globalDict_task:
+        globalDict_task[usr_id] = unsolved_tasks[0].get('id')
+        write_user_values("globalDict_task", globalDict_task)
     else:
+        globalDict_task[usr_id] = unsolved_tasks[globalDict_move[usr_id]].get('id')
+        write_user_values("globalDict_task", globalDict_task)
 
-        globalDict_level[usr_id] = callback.data
-        write_user_values("globalDict_level", globalDict_level)
+    page = get_page(usr_id, globalDict_move, unsolved_tasks)
+    page_of_all = f"<b>№</b> {page + 1}/{len(unsolved_tasks)}\n\n"
+    message = page_of_all + print_task(unsolved_tasks[globalDict_move[usr_id]])
 
-        if usr_id not in globalDict_task:
-            globalDict_task[usr_id] = unsolved_tasks[0].get('id')
-            write_user_values("globalDict_task", globalDict_task)
-        else:
-            globalDict_task[usr_id] = unsolved_tasks[globalDict_move[usr_id]].get('id')
-            write_user_values("globalDict_task", globalDict_task)
-
-        page = get_page(usr_id, globalDict_move, unsolved_tasks)
-        page_of_all = f"<b>№</b> {page + 1}/{len(unsolved_tasks)}\n\n"
-        message = page_of_all + print_task(unsolved_tasks[globalDict_move[usr_id]])
-
-        await callback.message.edit_text(message, reply_markup=tasks_navigation,
-                                         disable_web_page_preview=True)
+    await callback.message.edit_text(message, reply_markup=tasks_navigation,
+                                     disable_web_page_preview=True)
 
 
 @dp.callback_query(F.data.in_({'left_task', 'right_task'}))
@@ -144,19 +144,20 @@ async def show_tasks_lr(callback: types.CallbackQuery):
         keyboard = tasks_request_result[1]
         await callback.message.edit_text(message, reply_markup=keyboard)
         await callback.answer()
-    else:
-        page = globalDict_move[usr_id]
-        number_tasks = len(unsolved_tasks)
+        return
 
-        page_of_all, globalDict_move[usr_id] = navigation(callback.data, page, number_tasks)
-        write_user_values("globalDict_move", globalDict_move)
+    page = globalDict_move[usr_id]
+    number_tasks = len(unsolved_tasks)
 
-        globalDict_task[usr_id] = unsolved_tasks[globalDict_move[usr_id]].get('id')
-        write_user_values("globalDict_task", globalDict_task)
+    page_of_all, globalDict_move[usr_id] = navigation(callback.data, page, number_tasks)
+    write_user_values("globalDict_move", globalDict_move)
 
-        message = page_of_all + print_task(unsolved_tasks[globalDict_move[usr_id]])
-        await callback.message.edit_text(message, reply_markup=tasks_navigation,
-                                         disable_web_page_preview=True)
+    globalDict_task[usr_id] = unsolved_tasks[globalDict_move[usr_id]].get('id')
+    write_user_values("globalDict_task", globalDict_task)
+
+    message = page_of_all + print_task(unsolved_tasks[globalDict_move[usr_id]])
+    await callback.message.edit_text(message, reply_markup=tasks_navigation,
+                                     disable_web_page_preview=True)
 
 
 @dp.callback_query(F.data == "more_task")
@@ -174,14 +175,15 @@ async def show_more_task(callback: types.CallbackQuery):
         keyboard = tasks_request_result[1]
         await callback.message.edit_text(message, reply_markup=keyboard)
         await callback.answer()
-    else:
-        # Клавиатура при подробном просмотре задачи
-        tasks_more_navigation = InlineKeyboardBuilder()
-        tmn_b1 = InlineKeyboardButton(text="Вернуться к просмотру",
-                                      callback_data=globalDict_level[usr_id])
-        tasks_more_navigation = tasks_more_navigation.add(tmn_b1, tn_b2, menu_inline_b)
-        tasks_more_navigation = tasks_more_navigation.adjust(1).as_markup()
-        message = print_task(unsolved_tasks[globalDict_move[usr_id]], 1)
+        return
 
-        await callback.message.edit_text(message, reply_markup=tasks_more_navigation,
-                                         disable_web_page_preview=True)
+    # Клавиатура при подробном просмотре задачи
+    tasks_more_navigation = InlineKeyboardBuilder()
+    tmn_b1 = InlineKeyboardButton(text="Вернуться к просмотру",
+                                  callback_data=globalDict_level[usr_id])
+    tasks_more_navigation = tasks_more_navigation.add(tmn_b1, tn_b2, menu_inline_b)
+    tasks_more_navigation = tasks_more_navigation.adjust(1).as_markup()
+    message = print_task(unsolved_tasks[globalDict_move[usr_id]], 1)
+
+    await callback.message.edit_text(message, reply_markup=tasks_more_navigation,
+                                     disable_web_page_preview=True)

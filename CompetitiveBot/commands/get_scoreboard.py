@@ -72,18 +72,20 @@ async def show_scoreboard(callback: types.CallbackQuery):
     scoreboard = read_scoreboard()
     if not scoreboard:
         table = 'Ошибка при отправке запроса'
+        await callback.message.edit_text(table, reply_markup=menu_ikb)
+        return
+
+    table = []
+    scoreboard_data = scoreboard.get("rows")
+
+    if len(scoreboard_data) > 10:
+        table = append_table(scoreboard_data, table, first_five=5)
+        table.append(["...", "...", "..."])
+        table = append_table(scoreboard_data, table, last_five=-5)
     else:
-        table = []
-        scoreboard_data = scoreboard.get("rows")
+        table = append_table(scoreboard_data, table)
 
-        if len(scoreboard_data) > 10:
-            table = append_table(scoreboard_data, table, first_five=5)
-            table.append(["...", "...", "..."])
-            table = append_table(scoreboard_data, table, last_five=-5)
-        else:
-            table = append_table(scoreboard_data, table)
-
-        table_header = ["Место", "Пользователь", "Счёт"]
-        table = f'<pre>{tabulate(table, headers=table_header, tablefmt="simple")}</pre>'
+    table_header = ["Место", "Пользователь", "Счёт"]
+    table = f'<pre>{tabulate(table, headers=table_header, tablefmt="simple")}</pre>'
 
     await callback.message.edit_text(table, reply_markup=menu_ikb)

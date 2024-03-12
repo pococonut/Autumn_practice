@@ -179,9 +179,9 @@ async def reg_user(callback: types.CallbackQuery, state: FSMContext):
 
     if already_exist:
         await callback.message.edit_text("Вы уже зарегистрированы.",  reply_markup=menu_keyboard)
-    else:
-        await callback.message.edit_text("Отправьте ФИО в формате Иванов Иван Иванович.")
-        await state.set_state(User.name)
+        return
+    await callback.message.edit_text("Отправьте ФИО в формате Иванов Иван Иванович.")
+    await state.set_state(User.name)
 
 
 @dp.message(User.name)

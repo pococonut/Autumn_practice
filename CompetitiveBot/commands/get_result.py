@@ -94,14 +94,16 @@ async def show_user_result(callback: types.CallbackQuery):
 
     if not submission:
         judge_response = "Произошел сбой, повторите отправку позже."
-    else:
-        submission_abbreviation = check_submission_verdict(submission)
-        verdict_text = get_verdict_text(submission_abbreviation)
-        problem_name = get_problem_name(submission)
-        submission_lang = submission.get('language_id')
+        await callback.message.edit_text(judge_response, reply_markup=after_result_ikb)
+        return
 
-        judge_response = (f"<b><em>Задача:</em></b> {problem_name}\n"
-                          f"<b><em>Язык программирования:</em></b> {submission_lang}\n"
-                          f"<b><em>Результат:</em></b>\n\n {verdict_text}")
+    submission_abbreviation = check_submission_verdict(submission)
+    verdict_text = get_verdict_text(submission_abbreviation)
+    problem_name = get_problem_name(submission)
+    submission_lang = submission.get('language_id')
+
+    judge_response = (f"<b><em>Задача:</em></b> {problem_name}\n"
+                      f"<b><em>Язык программирования:</em></b> {submission_lang}\n"
+                      f"<b><em>Результат:</em></b>\n\n {verdict_text}")
 
     await callback.message.edit_text(judge_response, reply_markup=after_result_ikb)
